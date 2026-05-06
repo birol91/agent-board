@@ -1,22 +1,22 @@
-# AgentDeck
+# AgentBoard
 
 > Visual control panel for Claude Code agents, skills, memory, and configuration — built on top of the [wshobson/agents](https://github.com/wshobson/agents) ecosystem.
 
 A desktop application that turns Claude Code's `.claude/` configuration into a modern GUI. Pick agents from a marketplace of 184+ specialists, edit their prompts, manage your project's memory, and watch agents work in real time — all without leaving the dashboard.
 
-**AgentDeck does not replace your Claude Code chat.** Conversations and orchestration stay in the official VS Code extension or terminal CLI. AgentDeck is the *configuration + observability* layer that sits next to it.
+**AgentBoard does not replace your Claude Code chat.** Conversations and orchestration stay in the official VS Code extension or terminal CLI. AgentBoard is the *configuration + observability* layer that sits next to it.
 
 ---
 
-## Why AgentDeck?
+## Why AgentBoard?
 
 Claude Code is powerful but its surface area lives in scattered files: `.claude/agents/*.md`, `.claude/skills/<name>/SKILL.md`, `.claude/commands/*.md`, `CLAUDE.md`, `settings.json`, `~/.claude/memory/`. Setting up a new project means copying boilerplate, editing markdown by hand, and remembering which agent does what.
 
-AgentDeck solves three problems:
+AgentBoard solves three problems:
 
 1. **Setup friction** — A new project should take 60 seconds, not 30 minutes of file shuffling.
 2. **Discovery** — 184 agents in the wshobson marketplace is too many to remember. A visual catalog with filters helps you pick the right ones.
-3. **Observability** — There is no built-in way to see *which agent is running right now*, *what tool it just called*, *how long it took*. AgentDeck shows this live.
+3. **Observability** — There is no built-in way to see *which agent is running right now*, *what tool it just called*, *how long it took*. AgentBoard shows this live.
 
 ---
 
@@ -24,7 +24,7 @@ AgentDeck solves three problems:
 
 ```
 ┌──────────────────────────────────────────────────────────┐
-│                    AgentDeck (Electron)                   │
+│                    AgentBoard (Electron)                   │
 │  ┌────────────────────────────────────────────────────┐  │
 │  │  React + TypeScript UI                             │  │
 │  │  ┌──────────┬─────────┬─────────┬──────────────┐  │  │
@@ -49,9 +49,9 @@ AgentDeck solves three problems:
               └──────────────────────────┘
 ```
 
-- **AgentDeck never proxies the LLM.** Claude Code talks to Anthropic directly.
-- **AgentDeck never owns the chat.** It only reads/writes config files and listens to hook events.
-- **Communication with Claude Code is one-way at runtime:** Claude Code → hooks → AgentDeck. AgentDeck shows the world; the chat drives it.
+- **AgentBoard never proxies the LLM.** Claude Code talks to Anthropic directly.
+- **AgentBoard never owns the chat.** It only reads/writes config files and listens to hook events.
+- **Communication with Claude Code is one-way at runtime:** Claude Code → hooks → AgentBoard. AgentBoard shows the world; the chat drives it.
 
 ---
 
@@ -109,7 +109,7 @@ Edit what you installed. Manage memory.
 The killer feature. See what's happening as it happens.
 
 - [ ] Hook-based event capture: `PreToolUse`, `PostToolUse`, `SubagentStop`, `Stop`
-- [ ] WebSocket pipe from Claude Code hooks to AgentDeck
+- [ ] WebSocket pipe from Claude Code hooks to AgentBoard
 - [ ] Active agents panel: who's running, since when, on which task
 - [ ] Tool-call timeline: every Read/Edit/Write/Bash with parameters and result
 - [ ] Per-agent token usage and duration
@@ -128,7 +128,7 @@ Drive the deck yourself.
 - [ ] Compare two runs side by side
 - [ ] Export run as markdown / JSON
 
-**Success criterion:** Power users use AgentDeck instead of typing `Task` calls.
+**Success criterion:** Power users use AgentBoard instead of typing `Task` calls.
 
 ### v5.0 — Hooks, Permissions, Polish *(2 weeks)*
 
@@ -150,7 +150,7 @@ The full settings surface, plus release engineering.
 ## Project structure (planned)
 
 ```
-AgentDeck/
+AgentBoard/
 ├── apps/
 │   ├── desktop/              # Electron + React shell
 │   │   ├── src/
@@ -178,7 +178,7 @@ AgentDeck/
 
 ## Non-goals
 
-To keep the project focused, AgentDeck explicitly **will not**:
+To keep the project focused, AgentBoard explicitly **will not**:
 
 - Replace the Claude Code chat interface (use the VS Code extension or terminal CLI for that)
 - Send prompts to Claude / Anthropic directly (Claude Code is the only thing that talks to the API)

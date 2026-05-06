@@ -1,20 +1,46 @@
 {
-  "name": "agentdeck",
-  "version": "0.0.0",
+  "name": "agent-board",
+  "version": "1.0.0",
   "private": true,
   "description": "Visual control panel for Claude Code agents, skills, memory, and configuration.",
   "license": "MIT",
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
+  "main": "dist/main/index.js",
   "scripts": {
-    "dev": "npm run dev -w @agentdeck/desktop",
-    "build": "npm run build --workspaces --if-present",
-    "typecheck": "npm run typecheck --workspaces --if-present",
+    "dev": "concurrently -k -n vite,main,preload,electron -c cyan,yellow,green,magenta \"npm:dev:renderer\" \"npm:dev:main\" \"npm:dev:preload\" \"npm:dev:electron\"",
+    "dev:renderer": "vite",
+    "dev:main": "node scripts/copy-assets.mjs && tsc -p tsconfig.main.json --watch --preserveWatchOutput",
+    "dev:preload": "npm run build:preload && tsc -p tsconfig.preload.json --watch --preserveWatchOutput",
+    "dev:electron": "wait-on tcp:5173 dist/main/index.js dist/preload/index.js && node ./scripts/run-electron.cjs",
+    "build:renderer": "vite build",
+    "build:main": "tsc -p tsconfig.main.json && node scripts/copy-assets.mjs",
+    "build:preload": "tsc -p tsconfig.preload.json && node scripts/preload-pkg.mjs",
+    "build": "npm run build:renderer && npm run build:main && npm run build:preload",
+    "typecheck": "tsc --noEmit -p tsconfig.renderer.json && tsc --noEmit -p tsconfig.main.json && tsc --noEmit -p tsconfig.preload.json",
     "postinstall": "node scripts/install.mjs"
   },
   "engines": {
     "node": ">=20"
+  },
+  "dependencies": {
+    "js-yaml": "^4.1.0",
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0",
+    "reactflow": "^11.11.4",
+    "zustand": "^5.0.0"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^22.0.0",
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.0",
+    "autoprefixer": "^10.4.20",
+    "concurrently": "^9.0.0",
+    "electron": "^30.5.1",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.15",
+    "typescript": "^5.6.0",
+    "vite": "^5.4.0",
+    "wait-on": "^8.0.0"
   }
 }

@@ -9,14 +9,14 @@ const projectPkgPath = resolve(projectRoot, "package.json");
 
 if (!existsSync(projectPkgPath)) {
   console.log(
-    `[agentdeck:install] no package.json at ${projectPkgPath}, skipping host wiring`,
+    `[agent-board:install] no package.json at ${projectPkgPath}, skipping host wiring`,
   );
   process.exit(0);
 }
 
 if (resolve(projectRoot) === resolve(agentDeckRoot)) {
   console.log(
-    "[agentdeck:install] running inside the AgentDeck repo itself, skipping host wiring",
+    "[agent-board:install] running inside the AgentBoard repo itself, skipping host wiring",
   );
   process.exit(0);
 }
@@ -27,14 +27,14 @@ pkg.scripts ??= {};
 const relPath = relative(projectRoot, agentDeckRoot).replace(/\\/g, "/");
 const cmd = `npm run dev --prefix ${relPath}`;
 
-if (pkg.scripts.agentdeck === cmd) {
-  console.log("[agentdeck:install] host script already wired");
+if (pkg.scripts["agent-board"] === cmd) {
+  console.log("[agent-board:install] host script already wired");
   process.exit(0);
 }
 
-pkg.scripts.agentdeck = cmd;
+pkg.scripts["agent-board"] = cmd;
 writeFileSync(projectPkgPath, JSON.stringify(pkg, null, 2) + "\n");
 console.log(
-  `[agentdeck:install] added "agentdeck" script to ${relative(process.cwd(), projectPkgPath)}`,
+  `[agent-board:install] added "agent-board" script to ${relative(process.cwd(), projectPkgPath)}`,
 );
-console.log(`[agentdeck:install] run it with: npm run agentdeck`);
+console.log(`[agent-board:install] run it with: npm run agent-board`);

@@ -7,7 +7,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, "..");
 const vendor = resolve(root, "vendor", "wshobson-agents");
 const pluginsDir = resolve(vendor, "plugins");
-const out = resolve(root, "apps", "desktop", "src", "main", "catalog.json");
+const out = resolve(root, "src", "main", "catalog.json");
 
 if (!existsSync(pluginsDir)) {
   console.error(`[build-catalog] vendor missing at ${pluginsDir}`);
