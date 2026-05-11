@@ -25,6 +25,26 @@ export interface IpcContract {
     input: void;
     output: { rootPath: string };
   };
+  "app:recentProjects": {
+    input: void;
+    output: { paths: string[] };
+  };
+  "app:addRecent": {
+    input: { rootPath: string };
+    output: { ok: true };
+  };
+  "app:clearRecent": {
+    input: { rootPath: string };
+    output: { ok: true };
+  };
+  "dialog:openProject": {
+    input: void;
+    output: { rootPath: string | null };
+  };
+  "project:hasClaudeFolder": {
+    input: { rootPath: string };
+    output: { exists: boolean };
+  };
   "catalog:read": {
     input: void;
     output: Catalog;

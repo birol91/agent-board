@@ -100,9 +100,15 @@ export function AgentWindow({
     };
   }, [onMove, onMoveCommit]);
 
+  const isRunning = status === "running";
   return (
     <div
-      className="absolute flex flex-col overflow-hidden rounded-xl border border-stone-300 bg-white shadow-2xl"
+      className={
+        "absolute flex flex-col overflow-hidden rounded-xl border bg-white shadow-2xl dark:bg-slate-950 " +
+        (isRunning
+          ? "border-stone-300 dark:border-emerald-500 dark:shadow-running-glow"
+          : "border-stone-300 dark:border-claude-700/60 dark:shadow-claude-glow")
+      }
       style={{
         left: frame.x,
         top: frame.y,
@@ -112,22 +118,24 @@ export function AgentWindow({
     >
       <header
         onMouseDown={onHeaderMouseDown}
-        className="flex shrink-0 items-center justify-between border-b border-stone-200 bg-stone-50 px-3 py-2"
+        className="flex shrink-0 items-center justify-between border-b border-stone-200 bg-stone-50 px-3 py-2 dark:border-slate-800 dark:bg-slate-900"
         style={{ cursor: "grab" }}
       >
         <div className="flex min-w-0 items-center gap-2">
           <span
             className={
               "h-2 w-2 rounded-full " +
-              (status === "running"
+              (isRunning
                 ? "bg-emerald-500 animate-pulse"
-                : "bg-stone-300")
+                : "bg-stone-300 dark:bg-slate-600")
             }
           />
-          <div className="truncate text-xs font-semibold text-stone-900">
+          <div className="truncate text-xs font-semibold text-stone-900 dark:text-slate-100">
             {agentName}
           </div>
-          <span className="text-[10px] text-stone-400">live</span>
+          <span className="text-[10px] text-stone-400 dark:text-slate-500">
+            live
+          </span>
         </div>
         <div className="flex shrink-0 gap-1">
           <button
@@ -136,7 +144,7 @@ export function AgentWindow({
               e.stopPropagation();
               onClear();
             }}
-            className="rounded px-1.5 py-0.5 text-[10px] text-stone-500 hover:bg-stone-200"
+            className="rounded px-1.5 py-0.5 text-[10px] text-stone-500 hover:bg-stone-200 dark:text-slate-400 dark:hover:bg-slate-800"
             title="Clear"
           >
             clear
@@ -147,7 +155,7 @@ export function AgentWindow({
               e.stopPropagation();
               onMinimize();
             }}
-            className="rounded p-0.5 text-stone-500 hover:bg-stone-200"
+            className="rounded p-0.5 text-stone-500 hover:bg-stone-200 dark:text-slate-400 dark:hover:bg-slate-800"
             aria-label="Minimize"
             title="Minimize"
           >
@@ -159,7 +167,7 @@ export function AgentWindow({
               e.stopPropagation();
               onClose();
             }}
-            className="rounded p-0.5 text-stone-500 hover:bg-stone-200"
+            className="rounded p-0.5 text-stone-500 hover:bg-stone-200 dark:text-slate-400 dark:hover:bg-slate-800"
             aria-label="Close"
           >
             ✕

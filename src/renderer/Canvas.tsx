@@ -208,21 +208,35 @@ export function Canvas({
   const lasso =
     dragState.current?.kind === "lasso" ? dragState.current : null;
 
+  const theme = useUi((s) => s.theme);
+  const lightBg = {
+    backgroundImage:
+      "radial-gradient(circle, rgb(231 229 228) 1px, transparent 1px)",
+    backgroundSize: "16px 16px",
+  };
+  const darkBg = {
+    backgroundColor: "#020617",
+    backgroundImage: [
+      "radial-gradient(ellipse 80% 40% at 50% 100%, rgba(243,128,32,0.18), transparent 70%)",
+      "linear-gradient(to top, rgba(243,128,32,0.10), transparent 50%)",
+      "radial-gradient(circle, rgba(243,128,32,0.18) 1px, transparent 1px)",
+    ].join(", "),
+    backgroundSize: "100% 100%, 100% 100%, 24px 24px",
+  };
+
   return (
     <div
       ref={containerRef}
       onMouseDown={onCanvasMouseDown}
       className="relative h-full w-full overflow-auto"
-      style={{
-        backgroundImage:
-          "radial-gradient(circle, rgb(231 229 228) 1px, transparent 1px)",
-        backgroundSize: "16px 16px",
-      }}
+      style={theme === "dark" ? darkBg : lightBg}
     >
       <ConnectionLayer
         agents={agents}
         positions={positions}
         windowFrames={windowFrames}
+        statuses={statuses}
+        theme={theme}
         openWindows={openWindows.filter((n) => !minimizedWindows.includes(n))}
       />
 
@@ -325,27 +339,27 @@ function MinimizedTray({
       {names.map((name) => (
         <div
           key={`min-${name}`}
-          className="pointer-events-auto flex items-center gap-2 rounded-lg border border-stone-300 bg-white px-2.5 py-1.5 shadow-md"
+          className="pointer-events-auto flex items-center gap-2 rounded-lg border border-stone-300 bg-white px-2.5 py-1.5 shadow-md dark:border-claude-700/60 dark:bg-slate-900 dark:shadow-claude-glow"
         >
           <span
             className={
               "h-1.5 w-1.5 rounded-full " +
               (statuses[name] === "running"
                 ? "bg-emerald-500 animate-pulse"
-                : "bg-stone-300")
+                : "bg-stone-300 dark:bg-slate-600")
             }
           />
           <button
             type="button"
             onClick={() => onRestore(name)}
-            className="text-xs font-medium text-stone-800 hover:text-claude-700"
+            className="text-xs font-medium text-stone-800 hover:text-claude-700 dark:text-slate-100 dark:hover:text-claude-300"
           >
             {name}
           </button>
           <button
             type="button"
             onClick={() => onClose(name)}
-            className="rounded px-1 text-[10px] text-stone-500 hover:bg-stone-100"
+            className="rounded px-1 text-[10px] text-stone-500 hover:bg-stone-100 dark:text-slate-400 dark:hover:bg-slate-800"
             aria-label="Close"
           >
             ✕
@@ -379,11 +393,15 @@ function ConnectionLayer({
   agents,
   positions,
   windowFrames,
+  statuses,
+  theme,
   openWindows,
 }: {
   agents: Agent[];
   positions: Record<string, NodePosition>;
   windowFrames: Record<string, WindowFrame>;
+  statuses: Record<string, RunStatus>;
+  theme: "light" | "dark";
   openWindows: string[];
 }): JSX.Element {
   const lines = agents
@@ -393,7 +411,9 @@ function ConnectionLayer({
       const block = positions[name];
       const win = windowFrames[name] ?? defaultFrameFor(block);
       if (!block) return null;
-      return computeRoute(block, win, name);
+      const route = computeRoute(block, win, name);
+      const isRunning = statuses[name] === "running";
+      return { ...route, isRunning };
     })
     .filter((x): x is NonNullable<typeof x> => x !== null);
 
@@ -402,20 +422,33 @@ function ConnectionLayer({
       className="pointer-events-none absolute inset-0 h-full w-full"
       style={{ zIndex: 5 }}
     >
-      {lines.map((l) => (
-        <g key={l.name}>
-          <path
-            d={l.path}
-            stroke="#f38020"
-            strokeWidth={2}
-            fill="none"
-            strokeDasharray="4 4"
-            opacity={0.6}
-          />
-          <circle cx={l.ax} cy={l.ay} r={3} fill="#f38020" />
-          <circle cx={l.bx} cy={l.by} r={3} fill="#f38020" />
-        </g>
-      ))}
+      <defs>
+        <filter id="line-glow" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="3" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
+      {lines.map((l) => {
+        const color =
+          l.isRunning && theme === "dark" ? "#10b981" : "#f38020";
+        return (
+          <g key={l.name} filter="url(#line-glow)">
+            <path
+              d={l.path}
+              stroke={color}
+              strokeWidth={2}
+              fill="none"
+              strokeDasharray="4 4"
+              opacity={0.85}
+            />
+            <circle cx={l.ax} cy={l.ay} r={3.5} fill={color} />
+            <circle cx={l.bx} cy={l.by} r={3.5} fill={color} />
+          </g>
+        );
+      })}
     </svg>
   );
 }

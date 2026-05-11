@@ -8,6 +8,8 @@ import type {
 import { call } from "./bridge";
 import { useUi } from "./store";
 
+
+
 const MODELS: ClaudeModel[] = ["inherit", "opus", "sonnet", "haiku"];
 
 const MODEL_HELP: Record<ClaudeModel, string> = {
@@ -72,6 +74,7 @@ export function AgentProperties({
   );
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const theme = useUi((s) => s.theme);
 
   useEffect(() => {
     setModel(agent.frontmatter.model ?? "inherit");
@@ -124,20 +127,20 @@ export function AgentProperties({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-6">
-      <div className="flex h-[80vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
-        <header className="flex items-center justify-between border-b border-stone-200 px-5 py-3">
+      <div className="flex h-[80vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white dark:bg-slate-900 shadow-2xl dark:bg-slate-950 dark:shadow-claude-glow-strong">
+        <header className="flex items-center justify-between border-b border-stone-200 dark:border-slate-800 px-5 py-3">
           <div className="min-w-0">
-            <div className="text-sm font-semibold text-stone-900">
+            <div className="text-sm font-semibold text-stone-900 dark:text-slate-100 dark:text-slate-100">
               {agent.frontmatter.name}
             </div>
-            <div className="truncate text-xs text-stone-500">
+            <div className="truncate text-xs text-stone-500 dark:text-slate-400 dark:text-slate-400">
               {agent.filePath}
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="rounded p-1 text-stone-500 hover:bg-stone-100"
+            className="rounded p-1 text-stone-500 dark:text-slate-400 hover:bg-stone-100 dark:hover:bg-slate-800 dark:bg-slate-800 dark:bg-slate-800"
             aria-label="Close"
           >
             ✕
@@ -160,14 +163,14 @@ export function AgentProperties({
                     "rounded-lg border px-3 py-2 text-sm transition " +
                     (model === m
                       ? "border-claude-500 bg-claude-50 font-medium text-claude-700"
-                      : "border-stone-200 text-stone-700 hover:border-stone-300")
+                      : "border-stone-200 dark:border-slate-800 text-stone-700 dark:text-slate-200 hover:border-stone-300")
                   }
                 >
                   {m}
                 </button>
               ))}
             </div>
-            <p className="mt-1.5 text-xs text-stone-500">{MODEL_HELP[model]}</p>
+            <p className="mt-1.5 text-xs text-stone-500 dark:text-slate-400 dark:text-slate-400">{MODEL_HELP[model]}</p>
           </Field>
 
           <Field label="Permissions">
@@ -181,14 +184,14 @@ export function AgentProperties({
                     "rounded-lg border px-3 py-2 text-sm capitalize transition " +
                     (permission === p
                       ? "border-claude-500 bg-claude-50 font-medium text-claude-700"
-                      : "border-stone-200 text-stone-700 hover:border-stone-300")
+                      : "border-stone-200 dark:border-slate-800 text-stone-700 dark:text-slate-200 hover:border-stone-300")
                   }
                 >
                   {p}
                 </button>
               ))}
             </div>
-            <p className="mt-1.5 text-xs text-stone-500">
+            <p className="mt-1.5 text-xs text-stone-500 dark:text-slate-400 dark:text-slate-400">
               {permission === "read"
                 ? "Read, Grep, Glob — agent can only read files."
                 : permission === "write"
@@ -197,29 +200,31 @@ export function AgentProperties({
             </p>
           </Field>
 
-          <Field label="Block color">
-            <div className="flex flex-wrap gap-2">
-              {COLORS.map((c) => (
-                <button
-                  key={c.id}
-                  type="button"
-                  onClick={() => setColor(c.id)}
-                  title={c.label}
-                  className={
-                    "h-8 w-8 rounded-full border-2 transition " +
-                    c.cls +
-                    " " +
-                    (color === c.id
-                      ? "border-stone-900 ring-2 ring-stone-900/20"
-                      : "border-white shadow-sm hover:scale-110")
-                  }
-                />
-              ))}
-            </div>
-          </Field>
+          {theme === "light" ? (
+            <Field label="Block color">
+              <div className="flex flex-wrap gap-2">
+                {COLORS.map((c) => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => setColor(c.id)}
+                    title={c.label}
+                    className={
+                      "h-8 w-8 rounded-full border-2 transition " +
+                      c.cls +
+                      " " +
+                      (color === c.id
+                        ? "border-stone-900 ring-2 ring-stone-900/20"
+                        : "border-white shadow-sm hover:scale-110")
+                    }
+                  />
+                ))}
+              </div>
+            </Field>
+          ) : null}
 
           <ReadOnlyField label="System prompt (read-only)">
-            <pre className="max-h-72 overflow-auto whitespace-pre-wrap rounded-lg border border-stone-200 bg-stone-50 p-3 font-mono text-xs text-stone-700">
+            <pre className="max-h-72 overflow-auto whitespace-pre-wrap rounded-lg border border-stone-200 dark:border-slate-800 bg-stone-50 dark:bg-slate-900 p-3 font-mono text-xs text-stone-700 dark:text-slate-200 dark:text-slate-200">
               {agent.systemPrompt}
             </pre>
           </ReadOnlyField>
@@ -231,7 +236,7 @@ export function AgentProperties({
           )}
         </div>
 
-        <footer className="flex items-center justify-between border-t border-stone-200 px-5 py-3">
+        <footer className="flex items-center justify-between border-t border-stone-200 dark:border-slate-800 px-5 py-3">
           <button
             type="button"
             onClick={remove}
@@ -244,7 +249,7 @@ export function AgentProperties({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-lg px-3 py-2 text-sm text-stone-700 hover:bg-stone-100"
+              className="rounded-lg px-3 py-2 text-sm text-stone-700 dark:text-slate-200 hover:bg-stone-100 dark:hover:bg-slate-800 dark:bg-slate-800 dark:bg-slate-800"
             >
               Cancel
             </button>
@@ -272,7 +277,7 @@ function Field({
 }): JSX.Element {
   return (
     <label className="mb-4 block">
-      <span className="mb-1.5 block text-xs font-medium text-stone-600">
+      <span className="mb-1.5 block text-xs font-medium text-stone-600 dark:text-slate-300 dark:text-slate-300">
         {label}
       </span>
       {children}
@@ -289,9 +294,9 @@ function ReadOnlyField({
 }): JSX.Element {
   return (
     <div className="mb-4">
-      <div className="mb-1.5 text-xs font-medium text-stone-600">{label}</div>
+      <div className="mb-1.5 text-xs font-medium text-stone-600 dark:text-slate-300 dark:text-slate-300">{label}</div>
       {typeof children === "string" ? (
-        <p className="text-sm text-stone-700">{children}</p>
+        <p className="text-sm text-stone-700 dark:text-slate-200 dark:text-slate-200">{children}</p>
       ) : (
         children
       )}

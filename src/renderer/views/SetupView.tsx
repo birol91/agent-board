@@ -29,7 +29,7 @@ export function SetupView(): JSX.Element {
   }, [project, refreshHooks]);
 
   if (!project) {
-    return <div className="text-sm text-stone-500">Loading…</div>;
+    return <div className="text-sm text-stone-500 dark:text-slate-400 dark:text-slate-400">Loading…</div>;
   }
 
   const checks = {
@@ -45,18 +45,18 @@ export function SetupView(): JSX.Element {
     <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-auto">
       <header className="flex items-baseline justify-between">
         <div>
-          <h2 className="text-base font-semibold text-stone-900">
+          <h2 className="text-base font-semibold text-stone-900 dark:text-slate-100 dark:text-slate-100">
             Set up Claude Code in {baseName(project.rootPath)}
           </h2>
-          <p className="text-xs text-stone-500">
+          <p className="text-xs text-stone-500 dark:text-slate-400 dark:text-slate-400">
             Claude Code Main runs in your chat. It reads CLAUDE.md and
             dispatches work to the agents you install. Recommended order: rules
             → agents → skills → live link.
           </p>
         </div>
-        <div className="rounded-lg border border-stone-200 bg-white px-3 py-1.5 text-xs">
-          <span className="font-semibold text-stone-900">{total}/4</span>
-          <span className="ml-1 text-stone-500">complete</span>
+        <div className="rounded-lg border border-stone-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-1.5 text-xs">
+          <span className="font-semibold text-stone-900 dark:text-slate-100 dark:text-slate-100">{total}/4</span>
+          <span className="ml-1 text-stone-500 dark:text-slate-400 dark:text-slate-400">complete</span>
         </div>
       </header>
 
@@ -131,8 +131,8 @@ export function SetupView(): JSX.Element {
         />
       </Step>
 
-      <div className="flex items-center justify-between rounded-xl border border-stone-200 bg-white p-4 shadow-sm">
-        <div className="text-sm text-stone-700">
+      <div className="flex items-center justify-between rounded-xl border border-stone-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm">
+        <div className="text-sm text-stone-700 dark:text-slate-200 dark:text-slate-200">
           {ready
             ? "Ready to ship. CLAUDE.md and at least one agent are in place."
             : "Finish steps 1 and 2 to be production-ready."}
@@ -166,7 +166,7 @@ function Step({
   children: React.ReactNode;
 }): JSX.Element {
   return (
-    <section className="rounded-xl border border-stone-200 bg-white p-4 shadow-sm">
+    <section className="rounded-xl border border-stone-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm">
       <header className="mb-2 flex items-center gap-2">
         <span
           className={
@@ -178,14 +178,14 @@ function Step({
         >
           {done ? "✓" : n}
         </span>
-        <h3 className="text-sm font-semibold text-stone-900">{title}</h3>
+        <h3 className="text-sm font-semibold text-stone-900 dark:text-slate-100 dark:text-slate-100">{title}</h3>
         {done && (
           <span className="ml-1 text-[10px] font-medium uppercase tracking-wide text-emerald-600">
             done
           </span>
         )}
       </header>
-      <p className="mb-3 text-xs text-stone-500">{sub}</p>
+      <p className="mb-3 text-xs text-stone-500 dark:text-slate-400 dark:text-slate-400">{sub}</p>
       {children}
     </section>
   );
@@ -202,8 +202,8 @@ function HooksRow({
 }): JSX.Element {
   const [busy, setBusy] = useState(false);
   return (
-    <div className="flex items-center justify-between rounded-lg border border-stone-100 bg-stone-50 px-3 py-2">
-      <span className="text-xs text-stone-600">
+    <div className="flex items-center justify-between rounded-lg border border-stone-100 dark:border-slate-800 bg-stone-50 dark:bg-slate-900 px-3 py-2">
+      <span className="text-xs text-stone-600 dark:text-slate-300 dark:text-slate-300">
         {installed
           ? `Hooks installed in ${rootPath}/.claude/settings.json`
           : "Hooks not installed yet"}
@@ -241,15 +241,15 @@ function ChipList({
   browseLabel: string;
 }): JSX.Element {
   return (
-    <div className="rounded-lg border border-stone-100 bg-stone-50 p-3">
+    <div className="rounded-lg border border-stone-100 dark:border-slate-800 bg-stone-50 dark:bg-slate-900 p-3">
       {items.length === 0 ? (
-        <p className="text-xs text-stone-500">{emptyLabel}</p>
+        <p className="text-xs text-stone-500 dark:text-slate-400 dark:text-slate-400">{emptyLabel}</p>
       ) : (
         <div className="flex flex-wrap gap-1.5">
           {items.map((it) => (
             <span
               key={it.id}
-              className="group inline-flex items-center gap-1.5 rounded-md border border-stone-200 bg-white px-2 py-1 text-xs text-stone-800"
+              className="group inline-flex items-center gap-1.5 rounded-md border border-stone-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-2 py-1 text-xs text-stone-800 dark:text-slate-100 dark:text-slate-100"
             >
               {it.name}
               <button
@@ -258,7 +258,7 @@ function ChipList({
                   if (!confirm(`Remove ${it.name}?`)) return;
                   await onRemove(it.id);
                 }}
-                className="text-stone-400 hover:text-red-600"
+                className="text-stone-400 dark:text-slate-500 hover:text-red-600"
                 aria-label={`Remove ${it.name}`}
               >
                 ✕
@@ -271,7 +271,7 @@ function ChipList({
         <button
           type="button"
           onClick={onBrowse}
-          className="rounded-md border border-stone-200 bg-white px-3 py-1 text-xs font-medium text-stone-700 hover:border-claude-300 hover:bg-claude-50"
+          className="rounded-md border border-stone-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-1 text-xs font-medium text-stone-700 dark:text-slate-200 hover:border-claude-300 hover:bg-claude-50"
         >
           {browseLabel}
         </button>
@@ -305,21 +305,21 @@ function ResetSection({
   }
 
   return (
-    <div className="rounded-xl border border-stone-200 bg-white p-4 shadow-sm">
+    <div className="rounded-xl border border-stone-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
         className="flex w-full items-center justify-between text-left"
       >
         <div>
-          <div className="text-sm font-semibold text-stone-900">
+          <div className="text-sm font-semibold text-stone-900 dark:text-slate-100 dark:text-slate-100">
             Restore to default
           </div>
-          <div className="text-xs text-stone-500">
+          <div className="text-xs text-stone-500 dark:text-slate-400 dark:text-slate-400">
             Wipe parts of this project's Claude Code setup.
           </div>
         </div>
-        <span className="text-stone-400">{open ? "▾" : "▸"}</span>
+        <span className="text-stone-400 dark:text-slate-500 dark:text-slate-500">{open ? "▾" : "▸"}</span>
       </button>
       {open && (
         <div className="mt-3 space-y-2">
@@ -374,10 +374,10 @@ function ResetRow({
   onClick: () => void;
 }): JSX.Element {
   return (
-    <div className="flex items-center justify-between rounded-lg border border-stone-100 bg-stone-50 px-3 py-2">
+    <div className="flex items-center justify-between rounded-lg border border-stone-100 dark:border-slate-800 bg-stone-50 dark:bg-slate-900 px-3 py-2">
       <div className="min-w-0">
-        <div className="text-xs font-medium text-stone-800">{label}</div>
-        <div className="truncate text-xs text-stone-500">{sub}</div>
+        <div className="text-xs font-medium text-stone-800 dark:text-slate-100 dark:text-slate-100">{label}</div>
+        <div className="truncate text-xs text-stone-500 dark:text-slate-400 dark:text-slate-400">{sub}</div>
       </div>
       <button
         type="button"
@@ -387,7 +387,7 @@ function ResetRow({
           "shrink-0 rounded-md px-3 py-1 text-xs font-medium disabled:opacity-40 " +
           (destructive
             ? "border border-red-200 text-red-700 hover:bg-red-50"
-            : "border border-stone-200 bg-white text-stone-700 hover:border-claude-300 hover:bg-claude-50")
+            : "border border-stone-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-stone-700 dark:text-slate-200 hover:border-claude-300 hover:bg-claude-50")
         }
       >
         Reset
@@ -439,15 +439,15 @@ function ClaudeMdEditor({
   }
 
   return (
-    <div className="rounded-lg border border-stone-100 bg-stone-50 p-3">
-      <div className="mb-2 truncate text-xs text-stone-400" title={filePath}>
+    <div className="rounded-lg border border-stone-100 dark:border-slate-800 bg-stone-50 dark:bg-slate-900 p-3">
+      <div className="mb-2 truncate text-xs text-stone-400 dark:text-slate-500 dark:text-slate-500" title={filePath}>
         {filePath} {exists ? "" : "(new)"}
       </div>
       <textarea
         value={content}
         onChange={(e) => setContent(e.target.value)}
         rows={14}
-        className="w-full rounded-md border border-stone-200 bg-white p-3 font-mono text-xs focus:border-claude-400 focus:outline-none focus:ring-2 focus:ring-claude-500/20"
+        className="w-full rounded-md border border-stone-200 bg-white p-3 font-mono text-xs text-stone-800 focus:border-claude-400 focus:outline-none focus:ring-2 focus:ring-claude-500/20 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100"
       />
       <div className="mt-2 flex items-center justify-end gap-3">
         {savedAt && <span className="text-xs text-emerald-600">Saved.</span>}

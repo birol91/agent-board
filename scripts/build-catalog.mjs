@@ -1,6 +1,7 @@
 import { readFileSync, writeFileSync, readdirSync, statSync, existsSync, mkdirSync } from "node:fs";
 import { resolve, join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { createHash } from "node:crypto";
 import yaml from "js-yaml";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -61,23 +62,54 @@ for (const pluginName of readdirSync(pluginsDir)) {
   }
 }
 
+const dedupedAgents = dedupe(agents, (a) => a.frontmatter.name, (a) => a.systemPrompt);
+const dedupedSkills = dedupe(skills, (s) => s.frontmatter.name, (s) => s.body);
+
 mkdirSync(dirname(out), { recursive: true });
 writeFileSync(
   out,
   JSON.stringify(
     {
       generatedAt: new Date().toISOString(),
-      counts: { agents: agents.length, skills: skills.length },
-      agents,
-      skills,
+      counts: { agents: dedupedAgents.length, skills: dedupedSkills.length },
+      agents: dedupedAgents,
+      skills: dedupedSkills,
     },
     null,
     2,
   ),
 );
+const droppedAgents = agents.length - dedupedAgents.length;
+const droppedSkills = skills.length - dedupedSkills.length;
 console.log(
-  `[build-catalog] wrote ${out} — ${agents.length} agents, ${skills.length} skills`,
+  `[build-catalog] wrote ${out} — ${dedupedAgents.length} agents (${droppedAgents} duplicates merged), ${dedupedSkills.length} skills (${droppedSkills} duplicates merged)`,
 );
+
+// Merge entries that share both name AND content hash. Keep entries that share
+// a name but have different content as separate variants. The kept entry gets
+// an `alsoInPlugins` list so the UI can show "this is also bundled in X, Y".
+function dedupe(items, getName, getContent) {
+  const groups = new Map();
+  for (const item of items) {
+    const name = getName(item);
+    const hash = createHash("sha1").update(getContent(item)).digest("hex");
+    const key = `${name}::${hash}`;
+    const existing = groups.get(key);
+    if (existing) {
+      existing.alsoInPlugins.push(item.plugin);
+    } else {
+      groups.set(key, { ...item, alsoInPlugins: [] });
+    }
+  }
+  return Array.from(groups.values()).map((entry) => {
+    if (entry.alsoInPlugins.length === 0) {
+      // No collisions — drop the empty array so the JSON stays clean.
+      const { alsoInPlugins: _omit, ...rest } = entry;
+      return rest;
+    }
+    return entry;
+  });
+}
 
 function parseMarkdown(filePath) {
   const raw = readFileSync(filePath, "utf8");

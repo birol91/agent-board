@@ -6,6 +6,7 @@ export interface CatalogAgent {
   frontmatter: AgentFrontmatter;
   systemPrompt: string;
   relPath: string;
+  alsoInPlugins?: string[];
 }
 
 export interface CatalogSkill {
@@ -15,6 +16,7 @@ export interface CatalogSkill {
   relPath: string;
   hasReferences: boolean;
   hasAssets: boolean;
+  alsoInPlugins?: string[];
 }
 
 export interface Catalog {

@@ -1,4 +1,6 @@
-import { ipcMain } from "electron";
+import { ipcMain, dialog, BrowserWindow } from "electron";
+import { promises as fs } from "node:fs";
+import path from "node:path";
 import type {
   IpcChannel,
   IpcContract,
@@ -25,6 +27,7 @@ import { getSocketPath } from "../hooks/server";
 import { resolveProjectRoot } from "../projectRoot";
 import { loadCatalog } from "../catalog";
 import { logError } from "../log";
+import { readRecent, addRecent, clearRecent } from "../userConfig";
 
 type Handler<C extends IpcChannel> = (
   input: IpcInput<C>,
@@ -33,6 +36,35 @@ type Handler<C extends IpcChannel> = (
 const handlers: { [C in IpcChannel]: Handler<C> } = {
   "app:health": () => ({ version: "1.0.0", ok: true }),
   "app:projectRoot": () => ({ rootPath: resolveProjectRoot() }),
+  "app:recentProjects": async () => ({ paths: await readRecent() }),
+  "app:addRecent": async ({ rootPath }) => {
+    await addRecent(rootPath);
+    return { ok: true };
+  },
+  "app:clearRecent": async ({ rootPath }) => {
+    await clearRecent(rootPath);
+    return { ok: true };
+  },
+  "dialog:openProject": async () => {
+    const win = BrowserWindow.getFocusedWindow() ?? undefined;
+    const result = win
+      ? await dialog.showOpenDialog(win, {
+          properties: ["openDirectory", "createDirectory"],
+        })
+      : await dialog.showOpenDialog({
+          properties: ["openDirectory", "createDirectory"],
+        });
+    const picked = result.canceled ? undefined : result.filePaths[0];
+    return { rootPath: picked ?? null };
+  },
+  "project:hasClaudeFolder": async ({ rootPath }) => {
+    try {
+      await fs.access(path.join(rootPath, ".claude"));
+      return { exists: true };
+    } catch {
+      return { exists: false };
+    }
+  },
   "project:read": async ({ rootPath }) => readProject(rootPath),
   "catalog:read": () => loadCatalog(),
   "agent:install": async ({ rootPath, from }) => installAgent(rootPath, from),

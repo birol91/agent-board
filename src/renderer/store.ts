@@ -1,8 +1,22 @@
 import { create } from "zustand";
 import type { Agent, HookEvent, Project } from "../shared";
 
-export type View = "setup" | "project" | "marketplace";
+export type View = "picker" | "setup" | "project" | "marketplace";
 export type RunStatus = "idle" | "running" | "waiting" | "disabled";
+export type Theme = "light" | "dark";
+
+const THEME_STORAGE_KEY = "agent-board:theme";
+
+function loadInitialTheme(): Theme {
+  if (typeof window === "undefined") return "light";
+  try {
+    const stored = window.localStorage.getItem(THEME_STORAGE_KEY);
+    if (stored === "dark" || stored === "light") return stored;
+  } catch {
+    // ignore
+  }
+  return "light";
+}
 
 export interface ActivityEntry {
   id: string;
@@ -25,6 +39,9 @@ const MAX_ACTIVITY = 200;
 const MAX_PER_AGENT = 100;
 
 interface UiStore {
+  theme: Theme;
+  setTheme: (t: Theme) => void;
+  toggleTheme: () => void;
   view: View;
   setView: (v: View) => void;
   project: Project | null;
@@ -53,7 +70,26 @@ interface UiStore {
 }
 
 export const useUi = create<UiStore>((set) => ({
-  view: "project",
+  theme: loadInitialTheme(),
+  setTheme: (theme) => {
+    try {
+      window.localStorage.setItem(THEME_STORAGE_KEY, theme);
+    } catch {
+      // ignore
+    }
+    set({ theme });
+  },
+  toggleTheme: () =>
+    set((s) => {
+      const next: Theme = s.theme === "dark" ? "light" : "dark";
+      try {
+        window.localStorage.setItem(THEME_STORAGE_KEY, next);
+      } catch {
+        // ignore
+      }
+      return { theme: next };
+    }),
+  view: "picker",
   setView: (view) => set({ view }),
   project: null,
   setProject: (project) => set({ project }),

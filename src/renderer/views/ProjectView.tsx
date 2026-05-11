@@ -174,7 +174,11 @@ export function ProjectView(): JSX.Element {
   }, [project, setProject, closeAllWindows]);
 
   if (!project) {
-    return <div className="text-sm text-stone-500">Loading project…</div>;
+    return (
+      <div className="text-sm text-stone-500 dark:text-slate-400">
+        Loading project…
+      </div>
+    );
   }
 
   if (project.agents.length === 0) {
@@ -202,17 +206,19 @@ export function ProjectView(): JSX.Element {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3">
-      <div className="relative flex min-h-0 flex-1 overflow-hidden rounded-xl border border-stone-200 bg-white shadow-sm">
-        <div className="absolute left-3 top-3 z-10 flex items-center gap-2 rounded-lg bg-white/80 px-3 py-1.5 text-xs text-stone-600 shadow-sm backdrop-blur">
-          <span className="font-semibold text-stone-900">
+      <div className="relative flex min-h-0 flex-1 overflow-hidden rounded-xl border border-stone-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950">
+        <div className="absolute left-3 top-3 z-10 flex items-center gap-2 rounded-lg bg-white/80 px-3 py-1.5 text-xs text-stone-600 shadow-sm backdrop-blur dark:bg-slate-900/80 dark:text-slate-300 dark:shadow-claude-glow">
+          <span className="font-semibold text-stone-900 dark:text-slate-100">
             {baseName(project.rootPath)}
           </span>
-          <span className="text-stone-400">{project.agents.length} agents</span>
+          <span className="text-stone-400 dark:text-slate-500">
+            {project.agents.length} agents
+          </span>
           <ActiveBadge />
           <button
             type="button"
             onClick={handleClearLayout}
-            className="ml-1 rounded border border-stone-200 bg-white px-2 py-0.5 text-[11px] font-medium text-stone-700 hover:border-claude-300 hover:bg-claude-50"
+            className="ml-1 rounded border border-stone-200 bg-white px-2 py-0.5 text-[11px] font-medium text-stone-700 hover:border-claude-300 hover:bg-claude-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-claude-500 dark:hover:bg-slate-800"
             title="Close all windows and tidy block positions"
           >
             Clear layout
@@ -256,7 +262,7 @@ function ActiveBadge(): JSX.Element | null {
   const activeSubagents = useUi((s) => s.activeSubagents);
   if (activeSubagents === 0) return null;
   return (
-    <span className="flex items-center gap-1 rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700">
+    <span className="flex items-center gap-1 rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
       <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
       {activeSubagents} active
     </span>
@@ -266,17 +272,19 @@ function ActiveBadge(): JSX.Element | null {
 function AgentStrip({ count }: { count: number }): JSX.Element {
   const setView = useUi((s) => s.setView);
   return (
-    <div className="flex items-center justify-between rounded-xl border border-stone-200 bg-white px-4 py-3 shadow-sm">
+    <div className="flex items-center justify-between rounded-xl border border-stone-200 bg-white px-4 py-3 shadow-sm dark:border-slate-800 dark:bg-slate-950 dark:shadow-claude-glow">
       <div>
-        <div className="text-xs font-semibold text-stone-700">Agents</div>
-        <div className="text-xs text-stone-500">
+        <div className="text-xs font-semibold text-stone-700 dark:text-slate-200">
+          Agents
+        </div>
+        <div className="text-xs text-stone-500 dark:text-slate-400">
           {count} installed · drag blocks on the canvas to arrange
         </div>
       </div>
       <button
         type="button"
         onClick={() => setView("marketplace")}
-        className="rounded-md border border-stone-200 px-3 py-1.5 text-xs font-medium text-stone-700 hover:border-claude-300 hover:bg-claude-50"
+        className="rounded-md border border-stone-200 px-3 py-1.5 text-xs font-medium text-stone-700 hover:border-claude-300 hover:bg-claude-50 dark:border-slate-700 dark:text-slate-200 dark:hover:border-claude-500 dark:hover:bg-slate-800"
       >
         + Add agent
       </button>
@@ -294,10 +302,12 @@ function SkillStrip({
   const setView = useUi((s) => s.setView);
   if (skills.length === 0) {
     return (
-      <div className="flex items-center justify-between rounded-xl border border-stone-200 bg-white px-4 py-3 shadow-sm">
+      <div className="flex items-center justify-between rounded-xl border border-stone-200 bg-white px-4 py-3 shadow-sm dark:border-slate-800 dark:bg-slate-950 dark:shadow-claude-glow">
         <div>
-          <div className="text-xs font-semibold text-stone-700">Skills</div>
-          <div className="text-xs text-stone-500">
+          <div className="text-xs font-semibold text-stone-700 dark:text-slate-200">
+            Skills
+          </div>
+          <div className="text-xs text-stone-500 dark:text-slate-400">
             No skills installed. Add domain knowledge packs from the
             marketplace.
           </div>
@@ -305,7 +315,7 @@ function SkillStrip({
         <button
           type="button"
           onClick={() => setView("marketplace")}
-          className="rounded-md border border-stone-200 px-3 py-1.5 text-xs font-medium text-stone-700 hover:border-claude-300 hover:bg-claude-50"
+          className="rounded-md border border-stone-200 px-3 py-1.5 text-xs font-medium text-stone-700 hover:border-claude-300 hover:bg-claude-50 dark:border-slate-700 dark:text-slate-200 dark:hover:border-claude-500 dark:hover:bg-slate-800"
         >
           Browse Skills
         </button>
@@ -313,15 +323,15 @@ function SkillStrip({
     );
   }
   return (
-    <div className="rounded-xl border border-stone-200 bg-white p-3 shadow-sm">
+    <div className="rounded-xl border border-stone-200 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-slate-950 dark:shadow-claude-glow">
       <div className="mb-2 flex items-center justify-between">
-        <div className="text-xs font-semibold text-stone-700">
+        <div className="text-xs font-semibold text-stone-700 dark:text-slate-200">
           Skills ({skills.length})
         </div>
         <button
           type="button"
           onClick={() => setView("marketplace")}
-          className="text-xs font-medium text-claude-700 hover:text-claude-800"
+          className="text-xs font-medium text-claude-700 hover:text-claude-800 dark:text-claude-400 dark:hover:text-claude-300"
         >
           + Add more
         </button>
@@ -362,20 +372,20 @@ function SkillChip({
   }
   return (
     <div
-      className="group relative min-w-0 rounded-lg border border-stone-200 bg-stone-50 px-3 py-2"
+      className="group relative min-w-0 rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-900"
       title={skill.frontmatter.description}
     >
-      <div className="truncate pr-5 text-xs font-medium text-stone-900">
+      <div className="truncate pr-5 text-xs font-medium text-stone-900 dark:text-slate-100">
         {skill.frontmatter.name}
       </div>
-      <div className="line-clamp-1 pr-5 text-[11px] text-stone-500">
+      <div className="line-clamp-1 pr-5 text-[11px] text-stone-500 dark:text-slate-400">
         {skill.frontmatter.description}
       </div>
       <button
         type="button"
         onClick={remove}
         disabled={busy}
-        className="absolute right-1 top-1 rounded p-0.5 text-stone-400 opacity-0 hover:bg-stone-200 hover:text-stone-700 group-hover:opacity-100 disabled:opacity-50"
+        className="absolute right-1 top-1 rounded p-0.5 text-stone-400 opacity-0 hover:bg-stone-200 hover:text-stone-700 group-hover:opacity-100 disabled:opacity-50 dark:text-slate-500 dark:hover:bg-slate-800 dark:hover:text-slate-200"
         aria-label="Remove skill"
       >
         ✕

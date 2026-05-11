@@ -4,48 +4,34 @@ import { useUi } from "./store";
 import { ProjectView } from "./views/ProjectView";
 import { MarketplaceView } from "./views/MarketplaceView";
 import { SetupView } from "./views/SetupView";
+import { PickerView } from "./views/PickerView";
 import { RestartHint } from "./RestartHint";
-import { call, onHookEvent } from "./bridge";
+import { onHookEvent } from "./bridge";
 
 export function App(): JSX.Element {
   const view = useUi((s) => s.view);
-  const setView = useUi((s) => s.setView);
-  const setProject = useUi((s) => s.setProject);
+  const project = useUi((s) => s.project);
   const ingestHookEvent = useUi((s) => s.ingestHookEvent);
+  const theme = useUi((s) => s.theme);
 
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const { rootPath } = await call("app:projectRoot", undefined);
-        const p = await call("project:read", { rootPath });
-        if (cancelled) return;
-        setProject(p);
-        if (!p.hasClaudeMd && p.agents.length === 0) {
-          setView("setup");
-        }
-        // Auto-install hooks on first open if absent — quietly.
-        try {
-          const { installed } = await call("hooks:status", { rootPath });
-          if (!installed && !cancelled) {
-            await call("hooks:install", { rootPath });
-          }
-        } catch {
-          // hooks are nice-to-have; never fail boot for them
-        }
-      } catch {
-        // surfaced by individual views
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [setProject, setView]);
+    document.documentElement.classList.toggle("dark", theme === "dark");
+  }, [theme]);
 
   useEffect(() => onHookEvent(ingestHookEvent), [ingestHookEvent]);
 
+  if (view === "picker" || !project) {
+    return (
+      <div className="flex h-screen bg-stone-50 dark:bg-slate-950">
+        <main className="flex min-h-0 flex-1 flex-col overflow-hidden p-4">
+          <PickerView />
+        </main>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex h-screen bg-stone-50">
+    <div className="flex h-screen bg-stone-50 dark:bg-slate-950">
       <Sidebar />
       <main className="flex min-h-0 flex-1 flex-col overflow-hidden p-4">
         {view === "setup" ? (
