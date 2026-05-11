@@ -1,6 +1,6 @@
 # AgentBoard
 
-**Browse, install, and monitor Claude Code agents — all from a single desktop app.**
+**Setup and monitor Claude Code agents — all from a single desktop app.**
 
 ![AgentBoard Canvas](./docs/screenshot-canvas.png)
 
