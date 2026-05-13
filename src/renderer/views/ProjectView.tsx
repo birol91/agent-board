@@ -299,7 +299,7 @@ function SkillStrip({
   skills: Project["skills"];
   onChange: () => Promise<void>;
 }): JSX.Element {
-  const setView = useUi((s) => s.setView);
+  const openMarketplace = useUi((s) => s.openMarketplace);
   if (skills.length === 0) {
     return (
       <div className="flex items-center justify-between rounded-xl border border-stone-200 bg-white px-4 py-3 shadow-sm dark:border-slate-800 dark:bg-slate-950 dark:shadow-claude-glow">
@@ -314,7 +314,7 @@ function SkillStrip({
         </div>
         <button
           type="button"
-          onClick={() => setView("marketplace")}
+          onClick={() => openMarketplace("skills")}
           className="rounded-md border border-stone-200 px-3 py-1.5 text-xs font-medium text-stone-700 hover:border-claude-300 hover:bg-claude-50 dark:border-slate-700 dark:text-slate-200 dark:hover:border-claude-500 dark:hover:bg-slate-800"
         >
           Browse Skills
@@ -330,7 +330,7 @@ function SkillStrip({
         </div>
         <button
           type="button"
-          onClick={() => setView("marketplace")}
+          onClick={() => openMarketplace("skills")}
           className="text-xs font-medium text-claude-700 hover:text-claude-800 dark:text-claude-400 dark:hover:text-claude-300"
         >
           + Add more

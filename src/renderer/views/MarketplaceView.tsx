@@ -10,9 +10,12 @@ import type {
 type Tab = "agents" | "skills";
 
 export function MarketplaceView(): JSX.Element {
+  const storeTab = useUi((s) => s.marketplaceTab);
+  const setMarketplaceTab = useUi((s) => s.setMarketplaceTab);
   const [catalog, setCatalog] = useState<Catalog | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [tab, setTab] = useState<Tab>("agents");
+  const tab: Tab = storeTab;
+  const setTab = (t: Tab) => setMarketplaceTab(t);
   const [query, setQuery] = useState("");
   const [plugin, setPlugin] = useState<string>("all");
   const [category, setCategory] = useState<string>("all");
@@ -255,7 +258,6 @@ function AgentDetail({
   agent: CatalogAgent | null;
 }): JSX.Element {
   const project = useUi((s) => s.project);
-  const setView = useUi((s) => s.setView);
   const setProject = useUi((s) => s.setProject);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -281,7 +283,6 @@ function AgentDetail({
       useUi.getState().flagRestartNeeded();
       const fresh = await call("project:read", { rootPath: project.rootPath });
       setProject(fresh);
-      setView("project");
     } catch (e) {
       setErr((e as Error).message);
     } finally {

@@ -7,6 +7,7 @@ export function SetupView(): JSX.Element {
   const project = useUi((s) => s.project);
   const setProject = useUi((s) => s.setProject);
   const setView = useUi((s) => s.setView);
+  const openMarketplace = useUi((s) => s.openMarketplace);
   const [hooksInstalled, setHooksInstalled] = useState(false);
 
   const refreshHooks = useCallback(async (rootPath: string) => {
@@ -110,7 +111,7 @@ export function SetupView(): JSX.Element {
             useUi.getState().flagRestartNeeded();
             await refreshProject();
           }}
-          onBrowse={() => setView("marketplace")}
+          onBrowse={() => openMarketplace("skills")}
           browseLabel="Browse Skills"
         />
       </Step>

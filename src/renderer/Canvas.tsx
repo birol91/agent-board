@@ -4,12 +4,12 @@ import type {
   NodePosition,
   WindowFrame,
 } from "../shared";
-import { AgentBlockCard } from "./AgentBlockCard";
 import { AgentWindow } from "./AgentWindow";
+import { QuantumCore } from "./QuantumCore";
 import { useUi, type RunStatus } from "./store";
 
-const BLOCK_WIDTH = 224;
-const BLOCK_HEIGHT_APPROX = 170;
+const BLOCK_WIDTH = 120;
+const BLOCK_HEIGHT_APPROX = 110;
 
 interface Props {
   agents: Agent[];
@@ -69,7 +69,6 @@ export function Canvas({
 
   const openWindows = useUi((s) => s.openWindows);
   const minimizedWindows = useUi((s) => s.minimizedWindows);
-  const toggleWindow = useUi((s) => s.toggleWindow);
   const closeWindow = useUi((s) => s.closeWindow);
   const minimizeWindow = useUi((s) => s.minimizeWindow);
   const restoreWindow = useUi((s) => s.restoreWindow);
@@ -243,7 +242,6 @@ export function Canvas({
       {agents.map((a) => {
         const name = a.frontmatter.name;
         const pos = positions[name] ?? { x: 0, y: 0 };
-        const isOpen = openWindows.includes(name);
         const isSelected = selected.has(name);
         return (
           <div
@@ -257,15 +255,13 @@ export function Canvas({
               style={{ cursor: "grab" }}
               className={
                 isSelected
-                  ? "rounded-xl ring-2 ring-claude-500 ring-offset-2"
+                  ? "rounded-full ring-2 ring-claude-500 ring-offset-4 ring-offset-transparent"
                   : ""
               }
             >
-              <AgentBlockCard
+              <QuantumCore
                 agent={a}
                 status={statuses[name] ?? "idle"}
-                windowOpen={isOpen}
-                onToggleWindow={() => toggleWindow(name)}
               />
             </div>
           </div>

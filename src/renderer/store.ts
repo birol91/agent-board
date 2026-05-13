@@ -2,6 +2,7 @@ import { create } from "zustand";
 import type { Agent, HookEvent, Project } from "../shared";
 
 export type View = "picker" | "setup" | "project" | "marketplace";
+export type MarketplaceTab = "agents" | "skills";
 export type RunStatus = "idle" | "running" | "waiting" | "disabled";
 export type Theme = "light" | "dark";
 
@@ -44,6 +45,9 @@ interface UiStore {
   toggleTheme: () => void;
   view: View;
   setView: (v: View) => void;
+  marketplaceTab: MarketplaceTab;
+  setMarketplaceTab: (t: MarketplaceTab) => void;
+  openMarketplace: (tab: MarketplaceTab) => void;
   project: Project | null;
   setProject: (p: Project | null) => void;
   selectedAgent: Agent | null;
@@ -91,6 +95,9 @@ export const useUi = create<UiStore>((set) => ({
     }),
   view: "picker",
   setView: (view) => set({ view }),
+  marketplaceTab: "agents",
+  setMarketplaceTab: (marketplaceTab) => set({ marketplaceTab }),
+  openMarketplace: (tab) => set({ view: "marketplace", marketplaceTab: tab }),
   project: null,
   setProject: (project) => set({ project }),
   selectedAgent: null,
