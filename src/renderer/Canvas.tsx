@@ -242,6 +242,7 @@ export function Canvas({
         statuses={statuses}
         theme={theme}
         activeNames={openWindows.filter((n) => !minimizedWindows.includes(n))}
+        quantumNames={quantumWindows}
       />
 
       {agents.map((a) => {
@@ -402,8 +403,8 @@ function defaultFrameFor(blockPos: NodePosition | undefined): WindowFrame {
   return {
     x: base.x + BLOCK_WIDTH + 80,
     y: base.y,
-    width: 200,
-    height: 200,
+    width: 180,
+    height: 180,
   };
 }
 
@@ -458,7 +459,9 @@ function QuantumWidget({
       if (ds.mode === "move") {
         onMove({ x: Math.max(0, ds.startFrame.x + dx), y: Math.max(0, ds.startFrame.y + dy), width: ds.startFrame.width, height: ds.startFrame.height });
       } else {
-        onMove({ x: ds.startFrame.x, y: ds.startFrame.y, width: Math.max(140, ds.startFrame.width + dx), height: Math.max(140, ds.startFrame.height + dy) });
+        // Keep square: use the larger delta to drive both dimensions
+        const side = Math.max(140, ds.startFrame.width + dx, ds.startFrame.height + dy);
+        onMove({ x: ds.startFrame.x, y: ds.startFrame.y, width: side, height: side });
       }
     }
     function onMouseUp(): void {
@@ -516,6 +519,7 @@ function ConnectionLayer({
   statuses,
   theme,
   activeNames,
+  quantumNames,
 }: {
   agents: Agent[];
   positions: Record<string, NodePosition>;
@@ -523,6 +527,7 @@ function ConnectionLayer({
   statuses: Record<string, RunStatus>;
   theme: "light" | "dark";
   activeNames: string[];
+  quantumNames: string[];
 }): JSX.Element {
   const lines = agents
     .map((a) => {
@@ -531,7 +536,8 @@ function ConnectionLayer({
       const block = positions[name];
       const win = windowFrames[name] ?? defaultFrameFor(block);
       if (!block) return null;
-      const route = computeRoute(block, win, name);
+      const isQuantum = quantumNames.includes(name);
+      const route = computeRoute(block, win, name, isQuantum);
       const isRunning = statuses[name] === "running";
       return { ...route, isRunning };
     })
@@ -577,6 +583,7 @@ function computeRoute(
   block: NodePosition,
   win: WindowFrame,
   name: string,
+  isQuantum = false,
 ): Route {
   const blockBox = {
     left: block.x,
@@ -586,13 +593,43 @@ function computeRoute(
     cx: block.x + BLOCK_WIDTH / 2,
     cy: block.y + BLOCK_HEIGHT_APPROX / 2,
   };
-  const winBox = {
+
+  const wcx = win.x + win.width / 2;
+  const wcy = win.y + win.height / 2;
+
+  let winBox: { left: number; right: number; top: number; bottom: number; cx: number; cy: number };
+
+  if (isQuantum) {
+    // Line terminates at the outer ring surface (r * 0.88 of the smaller dimension)
+    const outerR = Math.min(win.width, win.height) / 2 * 0.88;
+    // Direction from block center to quantum core center
+    const dx = wcx - blockBox.cx;
+    const dy = wcy - blockBox.cy;
+    const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+    const nx = dx / dist;
+    const ny = dy / dist;
+    // Surface point on the outer ring toward the block
+    const sx = wcx - nx * outerR;
+    const sy = wcy - ny * outerR;
+    // Collapse winBox to that surface point so the route ends there
+    winBox = { left: sx, right: sx, top: sy, bottom: sy, cx: wcx, cy: wcy };
+    // For the B endpoint we use the surface point directly
+    const ax = blockBox.right;
+    const ay = blockBox.cy;
+    const bx = sx;
+    const by = sy;
+    const midX = (ax + bx) / 2;
+    const path = `M ${ax} ${ay} C ${midX} ${ay}, ${midX} ${by}, ${bx} ${by}`;
+    return { name, path, ax, ay, bx, by };
+  }
+
+  winBox = {
     left: win.x,
     right: win.x + win.width,
     top: win.y,
     bottom: win.y + win.height,
-    cx: win.x + win.width / 2,
-    cy: win.y + win.height / 2,
+    cx: wcx,
+    cy: wcy,
   };
 
   const horizGap = Math.max(
@@ -619,10 +656,7 @@ function computeRoute(
     ay = blockBox.cy;
     by = winBox.cy;
     const midX = (ax + bx) / 2;
-    c1x = midX;
-    c1y = ay;
-    c2x = midX;
-    c2y = by;
+    c1x = midX; c1y = ay; c2x = midX; c2y = by;
   } else {
     if (winBox.cy > blockBox.cy) {
       ay = blockBox.bottom;
@@ -634,10 +668,7 @@ function computeRoute(
     ax = blockBox.cx;
     bx = winBox.cx;
     const midY = (ay + by) / 2;
-    c1x = ax;
-    c1y = midY;
-    c2x = bx;
-    c2y = midY;
+    c1x = ax; c1y = midY; c2x = bx; c2y = midY;
   }
 
   const path = `M ${ax} ${ay} C ${c1x} ${c1y}, ${c2x} ${c2y}, ${bx} ${by}`;
