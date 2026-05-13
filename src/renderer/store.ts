@@ -61,12 +61,15 @@ interface UiStore {
   agentIdToName: Record<string, string>;
   openWindows: string[];
   minimizedWindows: string[];
+  terminalWindows: string[];
   setOpenWindows: (names: string[]) => void;
   closeAllWindows: () => void;
   toggleWindow: (agentName: string) => void;
   closeWindow: (agentName: string) => void;
   minimizeWindow: (agentName: string) => void;
   restoreWindow: (agentName: string) => void;
+  openTerminal: (agentName: string) => void;
+  closeTerminal: (agentName: string) => void;
   ingestHookEvent: (e: HookEvent) => void;
   restartHintAt: number | null;
   flagRestartNeeded: () => void;
@@ -112,10 +115,11 @@ export const useUi = create<UiStore>((set) => ({
   agentIdToName: {},
   openWindows: [],
   minimizedWindows: [],
+  terminalWindows: [],
   setOpenWindows: (names) =>
-    set({ openWindows: [...names], minimizedWindows: [] }),
+    set({ openWindows: [...names], minimizedWindows: [], terminalWindows: [] }),
   closeAllWindows: () =>
-    set({ openWindows: [], minimizedWindows: [] }),
+    set({ openWindows: [], minimizedWindows: [], terminalWindows: [] }),
   toggleWindow: (name) =>
     set((s) => ({
       openWindows: s.openWindows.includes(name)
@@ -137,6 +141,16 @@ export const useUi = create<UiStore>((set) => ({
   restoreWindow: (name) =>
     set((s) => ({
       minimizedWindows: s.minimizedWindows.filter((n) => n !== name),
+    })),
+  openTerminal: (name) =>
+    set((s) => ({
+      terminalWindows: s.terminalWindows.includes(name)
+        ? s.terminalWindows
+        : [...s.terminalWindows, name],
+    })),
+  closeTerminal: (name) =>
+    set((s) => ({
+      terminalWindows: s.terminalWindows.filter((n) => n !== name),
     })),
   restartHintAt: null,
   flagRestartNeeded: () => set({ restartHintAt: Date.now() }),

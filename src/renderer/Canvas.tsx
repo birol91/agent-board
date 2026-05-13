@@ -6,6 +6,7 @@ import type {
 } from "../shared";
 import { AgentBlockCard } from "./AgentBlockCard";
 import { AgentWindow } from "./AgentWindow";
+import { QuantumCore } from "./QuantumCore";
 import { useUi, type RunStatus } from "./store";
 
 const BLOCK_WIDTH = 224;
@@ -69,10 +70,13 @@ export function Canvas({
 
   const openWindows = useUi((s) => s.openWindows);
   const minimizedWindows = useUi((s) => s.minimizedWindows);
+  const terminalWindows = useUi((s) => s.terminalWindows);
   const toggleWindow = useUi((s) => s.toggleWindow);
   const closeWindow = useUi((s) => s.closeWindow);
   const minimizeWindow = useUi((s) => s.minimizeWindow);
   const restoreWindow = useUi((s) => s.restoreWindow);
+  const openTerminal = useUi((s) => s.openTerminal);
+  const closeTerminal = useUi((s) => s.closeTerminal);
   const perAgentActivity = useUi((s) => s.perAgentActivity);
 
   const onBlockMouseDown = useCallback(
@@ -237,7 +241,10 @@ export function Canvas({
         windowFrames={windowFrames}
         statuses={statuses}
         theme={theme}
-        openWindows={openWindows.filter((n) => !minimizedWindows.includes(n))}
+        activeNames={[
+          ...openWindows.filter((n) => !minimizedWindows.includes(n) && !terminalWindows.includes(n)),
+          ...terminalWindows,
+        ]}
       />
 
       {agents.map((a) => {
@@ -272,13 +279,32 @@ export function Canvas({
         );
       })}
 
+      {/* QuantumCore widgets — shown when window is open but terminal is not */}
       {agents.map((a) => {
         const name = a.frontmatter.name;
         if (!openWindows.includes(name)) return null;
         if (minimizedWindows.includes(name)) return null;
+        if (terminalWindows.includes(name)) return null;
         const frame = windowFrames[name] ?? defaultFrameFor(positions[name]);
         return (
-          <div key={`win-${name}`} style={{ zIndex: 20 }}>
+          <div
+            key={`qc-${name}`}
+            className="absolute"
+            style={{ left: frame.x, top: frame.y, zIndex: 20 }}
+            onDoubleClick={() => openTerminal(name)}
+          >
+            <QuantumCore agentName={name} status={statuses[name] ?? "idle"} />
+          </div>
+        );
+      })}
+
+      {/* AgentWindow terminals — shown when terminal is open */}
+      {agents.map((a) => {
+        const name = a.frontmatter.name;
+        if (!terminalWindows.includes(name)) return null;
+        const frame = windowFrames[name] ?? defaultFrameFor(positions[name]);
+        return (
+          <div key={`win-${name}`} style={{ zIndex: 30 }}>
             <AgentWindow
               agentName={name}
               status={statuses[name] ?? "idle"}
@@ -287,7 +313,7 @@ export function Canvas({
               containerRef={containerRef}
               onMove={(f) => onWindowFrameChange(name, f)}
               onMoveCommit={() => onWindowFrameCommit(liveFrames.current)}
-              onClose={() => closeWindow(name)}
+              onClose={() => closeTerminal(name)}
               onMinimize={() => minimizeWindow(name)}
               onClear={() => {
                 useUi.setState((s) => ({
@@ -395,19 +421,19 @@ function ConnectionLayer({
   windowFrames,
   statuses,
   theme,
-  openWindows,
+  activeNames,
 }: {
   agents: Agent[];
   positions: Record<string, NodePosition>;
   windowFrames: Record<string, WindowFrame>;
   statuses: Record<string, RunStatus>;
   theme: "light" | "dark";
-  openWindows: string[];
+  activeNames: string[];
 }): JSX.Element {
   const lines = agents
     .map((a) => {
       const name = a.frontmatter.name;
-      if (!openWindows.includes(name)) return null;
+      if (!activeNames.includes(name)) return null;
       const block = positions[name];
       const win = windowFrames[name] ?? defaultFrameFor(block);
       if (!block) return null;

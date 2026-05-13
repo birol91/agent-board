@@ -1,7 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import type { WindowFrame } from "../shared";
 import type { AgentActivityEntry } from "./store";
-import { QuantumCore } from "./QuantumCore";
 
 interface Props {
   agentName: string;
@@ -101,11 +100,6 @@ export function AgentWindow({
     };
   }, [onMove, onMoveCommit]);
 
-  const [viewMode, setViewMode] = useState<"log" | "quantum">("log");
-  const toggleViewMode = useCallback(() => {
-    setViewMode((m) => (m === "log" ? "quantum" : "log"));
-  }, []);
-
   const isRunning = status === "running";
   return (
     <div
@@ -148,17 +142,6 @@ export function AgentWindow({
             type="button"
             onClick={(e) => {
               e.stopPropagation();
-              toggleViewMode();
-            }}
-            className="rounded px-1.5 py-0.5 text-[10px] text-stone-500 hover:bg-stone-200 dark:text-slate-400 dark:hover:bg-slate-800"
-            title={viewMode === "log" ? "Switch to Quantum view" : "Switch to log view"}
-          >
-            {viewMode === "log" ? "⬡" : "log"}
-          </button>
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
               onClear();
             }}
             className="rounded px-1.5 py-0.5 text-[10px] text-stone-500 hover:bg-stone-200 dark:text-slate-400 dark:hover:bg-slate-800"
@@ -192,17 +175,7 @@ export function AgentWindow({
         </div>
       </header>
 
-      {viewMode === "quantum" ? (
-        <div
-          className="flex flex-1 items-center justify-center bg-stone-950 dark:bg-slate-950"
-          onDoubleClick={toggleViewMode}
-          title="Double-click to return to log"
-        >
-          <QuantumCore agentName={agentName} status={status} />
-        </div>
-      ) : (
-        <ScrollLog activity={activity} agentName={agentName} onDoubleClick={toggleViewMode} />
-      )}
+      <ScrollLog activity={activity} agentName={agentName} />
 
       <div
         onMouseDown={onResizeMouseDown}
@@ -219,11 +192,9 @@ export function AgentWindow({
 function ScrollLog({
   activity,
   agentName,
-  onDoubleClick,
 }: {
   activity: AgentActivityEntry[];
   agentName: string;
-  onDoubleClick: () => void;
 }): JSX.Element {
   const ref = useRef<HTMLDivElement>(null);
   const ordered = [...activity].reverse();
@@ -237,8 +208,6 @@ function ScrollLog({
   return (
     <div
       ref={ref}
-      onDoubleClick={onDoubleClick}
-      title="Double-click to switch to Quantum view"
       className="flex-1 overflow-auto bg-stone-950 px-3 py-2 font-mono text-[11px] text-stone-100"
     >
       {ordered.length === 0 ? (

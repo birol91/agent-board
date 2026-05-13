@@ -77,7 +77,7 @@ export function QuantumCore({
         {isRunning ? "running" : isWaiting ? "waiting" : "idle"}
       </div>
 
-      <div className="mt-3 text-[9px] text-stone-600">double-click → log</div>
+      <div className="mt-3 text-[9px] text-stone-600">double-click → terminal</div>
     </div>
   );
 }
