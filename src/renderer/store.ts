@@ -61,15 +61,15 @@ interface UiStore {
   agentIdToName: Record<string, string>;
   openWindows: string[];
   minimizedWindows: string[];
-  terminalWindows: string[];
+  quantumWindows: string[];
   setOpenWindows: (names: string[]) => void;
   closeAllWindows: () => void;
   toggleWindow: (agentName: string) => void;
   closeWindow: (agentName: string) => void;
   minimizeWindow: (agentName: string) => void;
   restoreWindow: (agentName: string) => void;
-  openTerminal: (agentName: string) => void;
-  closeTerminal: (agentName: string) => void;
+  toQuantum: (agentName: string) => void;
+  toTerminal: (agentName: string) => void;
   ingestHookEvent: (e: HookEvent) => void;
   restartHintAt: number | null;
   flagRestartNeeded: () => void;
@@ -115,22 +115,24 @@ export const useUi = create<UiStore>((set) => ({
   agentIdToName: {},
   openWindows: [],
   minimizedWindows: [],
-  terminalWindows: [],
+  quantumWindows: [],
   setOpenWindows: (names) =>
-    set({ openWindows: [...names], minimizedWindows: [], terminalWindows: [] }),
+    set({ openWindows: [...names], minimizedWindows: [], quantumWindows: [] }),
   closeAllWindows: () =>
-    set({ openWindows: [], minimizedWindows: [], terminalWindows: [] }),
+    set({ openWindows: [], minimizedWindows: [], quantumWindows: [] }),
   toggleWindow: (name) =>
     set((s) => ({
       openWindows: s.openWindows.includes(name)
         ? s.openWindows.filter((n) => n !== name)
         : [...s.openWindows, name],
       minimizedWindows: s.minimizedWindows.filter((n) => n !== name),
+      quantumWindows: s.quantumWindows.filter((n) => n !== name),
     })),
   closeWindow: (name) =>
     set((s) => ({
       openWindows: s.openWindows.filter((n) => n !== name),
       minimizedWindows: s.minimizedWindows.filter((n) => n !== name),
+      quantumWindows: s.quantumWindows.filter((n) => n !== name),
     })),
   minimizeWindow: (name) =>
     set((s) => ({
@@ -142,15 +144,15 @@ export const useUi = create<UiStore>((set) => ({
     set((s) => ({
       minimizedWindows: s.minimizedWindows.filter((n) => n !== name),
     })),
-  openTerminal: (name) =>
+  toQuantum: (name) =>
     set((s) => ({
-      terminalWindows: s.terminalWindows.includes(name)
-        ? s.terminalWindows
-        : [...s.terminalWindows, name],
+      quantumWindows: s.quantumWindows.includes(name)
+        ? s.quantumWindows
+        : [...s.quantumWindows, name],
     })),
-  closeTerminal: (name) =>
+  toTerminal: (name) =>
     set((s) => ({
-      terminalWindows: s.terminalWindows.filter((n) => n !== name),
+      quantumWindows: s.quantumWindows.filter((n) => n !== name),
     })),
   restartHintAt: null,
   flagRestartNeeded: () => set({ restartHintAt: Date.now() }),

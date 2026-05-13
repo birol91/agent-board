@@ -70,13 +70,13 @@ export function Canvas({
 
   const openWindows = useUi((s) => s.openWindows);
   const minimizedWindows = useUi((s) => s.minimizedWindows);
-  const terminalWindows = useUi((s) => s.terminalWindows);
+  const quantumWindows = useUi((s) => s.quantumWindows);
   const toggleWindow = useUi((s) => s.toggleWindow);
   const closeWindow = useUi((s) => s.closeWindow);
   const minimizeWindow = useUi((s) => s.minimizeWindow);
   const restoreWindow = useUi((s) => s.restoreWindow);
-  const openTerminal = useUi((s) => s.openTerminal);
-  const closeTerminal = useUi((s) => s.closeTerminal);
+  const toQuantum = useUi((s) => s.toQuantum);
+  const toTerminal = useUi((s) => s.toTerminal);
   const perAgentActivity = useUi((s) => s.perAgentActivity);
 
   const onBlockMouseDown = useCallback(
@@ -241,10 +241,7 @@ export function Canvas({
         windowFrames={windowFrames}
         statuses={statuses}
         theme={theme}
-        activeNames={[
-          ...openWindows.filter((n) => !minimizedWindows.includes(n) && !terminalWindows.includes(n)),
-          ...terminalWindows,
-        ]}
+        activeNames={openWindows.filter((n) => !minimizedWindows.includes(n))}
       />
 
       {agents.map((a) => {
@@ -279,32 +276,15 @@ export function Canvas({
         );
       })}
 
-      {/* QuantumCore widgets — shown when window is open but terminal is not */}
+      {/* AgentWindow terminals — shown when window is open and NOT in quantum mode */}
       {agents.map((a) => {
         const name = a.frontmatter.name;
         if (!openWindows.includes(name)) return null;
         if (minimizedWindows.includes(name)) return null;
-        if (terminalWindows.includes(name)) return null;
+        if (quantumWindows.includes(name)) return null;
         const frame = windowFrames[name] ?? defaultFrameFor(positions[name]);
         return (
-          <div
-            key={`qc-${name}`}
-            className="absolute"
-            style={{ left: frame.x, top: frame.y, zIndex: 20 }}
-            onDoubleClick={() => openTerminal(name)}
-          >
-            <QuantumCore agentName={name} status={statuses[name] ?? "idle"} />
-          </div>
-        );
-      })}
-
-      {/* AgentWindow terminals — shown when terminal is open */}
-      {agents.map((a) => {
-        const name = a.frontmatter.name;
-        if (!terminalWindows.includes(name)) return null;
-        const frame = windowFrames[name] ?? defaultFrameFor(positions[name]);
-        return (
-          <div key={`win-${name}`} style={{ zIndex: 30 }}>
+          <div key={`win-${name}`} style={{ zIndex: 20 }}>
             <AgentWindow
               agentName={name}
               status={statuses[name] ?? "idle"}
@@ -313,8 +293,9 @@ export function Canvas({
               containerRef={containerRef}
               onMove={(f) => onWindowFrameChange(name, f)}
               onMoveCommit={() => onWindowFrameCommit(liveFrames.current)}
-              onClose={() => closeTerminal(name)}
+              onClose={() => closeWindow(name)}
               onMinimize={() => minimizeWindow(name)}
+              onToQuantum={() => toQuantum(name)}
               onClear={() => {
                 useUi.setState((s) => ({
                   perAgentActivity: { ...s.perAgentActivity, [name]: [] },
@@ -322,6 +303,26 @@ export function Canvas({
               }}
             />
           </div>
+        );
+      })}
+
+      {/* QuantumCore widgets — shown when window is open and in quantum mode */}
+      {agents.map((a) => {
+        const name = a.frontmatter.name;
+        if (!openWindows.includes(name)) return null;
+        if (minimizedWindows.includes(name)) return null;
+        if (!quantumWindows.includes(name)) return null;
+        const frame = windowFrames[name] ?? defaultFrameFor(positions[name]);
+        return (
+          <QuantumWidget
+            key={`qc-${name}`}
+            agentName={name}
+            status={statuses[name] ?? "idle"}
+            frame={frame}
+            onMove={(f) => onWindowFrameChange(name, f)}
+            onMoveCommit={() => onWindowFrameCommit(liveFrames.current)}
+            onToTerminal={() => toTerminal(name)}
+          />
         );
       })}
 
@@ -401,9 +402,108 @@ function defaultFrameFor(blockPos: NodePosition | undefined): WindowFrame {
   return {
     x: base.x + BLOCK_WIDTH + 80,
     y: base.y,
-    width: 360,
-    height: 280,
+    width: 200,
+    height: 200,
   };
+}
+
+function QuantumWidget({
+  agentName,
+  status,
+  frame,
+  onMove,
+  onMoveCommit,
+  onToTerminal,
+}: {
+  agentName: string;
+  status: RunStatus;
+  frame: WindowFrame;
+  onMove: (f: WindowFrame) => void;
+  onMoveCommit: (f: WindowFrame) => void;
+  onToTerminal: () => void;
+}): JSX.Element {
+  const dragRef = useRef<{
+    mode: "move" | "resize";
+    startX: number;
+    startY: number;
+    startFrame: WindowFrame;
+  } | null>(null);
+  const liveRef = useRef(frame);
+  liveRef.current = frame;
+
+  const onHeaderMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dragRef.current = { mode: "move", startX: e.clientX, startY: e.clientY, startFrame: { ...frame } };
+    },
+    [frame],
+  );
+
+  const onResizeMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dragRef.current = { mode: "resize", startX: e.clientX, startY: e.clientY, startFrame: { ...frame } };
+    },
+    [frame],
+  );
+
+  useEffect(() => {
+    function onMouseMove(e: MouseEvent): void {
+      const ds = dragRef.current;
+      if (!ds) return;
+      const dx = e.clientX - ds.startX;
+      const dy = e.clientY - ds.startY;
+      if (ds.mode === "move") {
+        onMove({ x: Math.max(0, ds.startFrame.x + dx), y: Math.max(0, ds.startFrame.y + dy), width: ds.startFrame.width, height: ds.startFrame.height });
+      } else {
+        onMove({ x: ds.startFrame.x, y: ds.startFrame.y, width: Math.max(140, ds.startFrame.width + dx), height: Math.max(140, ds.startFrame.height + dy) });
+      }
+    }
+    function onMouseUp(): void {
+      if (dragRef.current) { dragRef.current = null; onMoveCommit(liveRef.current); }
+    }
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onMouseUp);
+    return () => {
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onMouseUp);
+    };
+  }, [onMove, onMoveCommit]);
+
+  return (
+    <div
+      className="absolute overflow-hidden rounded-2xl border border-stone-800 bg-stone-950 shadow-2xl dark:shadow-claude-glow"
+      style={{ left: frame.x, top: frame.y, width: frame.width, height: frame.height, zIndex: 20 }}
+    >
+      {/* drag handle — invisible top strip */}
+      <div
+        onMouseDown={onHeaderMouseDown}
+        className="absolute inset-x-0 top-0 h-6 z-10"
+        style={{ cursor: "grab" }}
+      />
+
+      {/* content — double-click switches to terminal */}
+      <div
+        className="flex h-full w-full items-center justify-center"
+        onDoubleClick={onToTerminal}
+        title="Double-click to open terminal"
+      >
+        <QuantumCore agentName={agentName} status={status} />
+      </div>
+
+      {/* resize handle */}
+      <div
+        onMouseDown={onResizeMouseDown}
+        className="absolute bottom-0 right-0 h-4 w-4 cursor-nwse-resize z-10"
+        style={{
+          background:
+            "linear-gradient(135deg, transparent 50%, #44403c 50%, #44403c 60%, transparent 60%, transparent 70%, #44403c 70%, #44403c 80%, transparent 80%)",
+        }}
+      />
+    </div>
+  );
 }
 
 interface Route {
