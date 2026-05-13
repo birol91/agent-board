@@ -472,35 +472,29 @@ function QuantumWidget({
     };
   }, [onMove, onMoveCommit]);
 
+  // size = square side; QuantumCore fills the frame
+  const size = Math.min(frame.width, frame.height);
+
   return (
     <div
-      className="absolute overflow-hidden rounded-2xl border border-stone-800 bg-stone-950 shadow-2xl dark:shadow-claude-glow"
+      className="absolute"
       style={{ left: frame.x, top: frame.y, width: frame.width, height: frame.height, zIndex: 20 }}
     >
-      {/* drag handle — invisible top strip */}
+      {/* full-area drag + double-click zone */}
       <div
         onMouseDown={onHeaderMouseDown}
-        className="absolute inset-x-0 top-0 h-6 z-10"
-        style={{ cursor: "grab" }}
-      />
-
-      {/* content — double-click switches to terminal */}
-      <div
-        className="flex h-full w-full items-center justify-center"
         onDoubleClick={onToTerminal}
-        title="Double-click to open terminal"
+        title="Double-click to open terminal · drag to move"
+        className="absolute inset-0 flex items-center justify-center"
+        style={{ cursor: "grab" }}
       >
-        <QuantumCore agentName={agentName} status={status} />
+        <QuantumCore agentName={agentName} status={status} size={size} />
       </div>
 
-      {/* resize handle */}
+      {/* resize handle — tiny dot bottom-right */}
       <div
         onMouseDown={onResizeMouseDown}
-        className="absolute bottom-0 right-0 h-4 w-4 cursor-nwse-resize z-10"
-        style={{
-          background:
-            "linear-gradient(135deg, transparent 50%, #44403c 50%, #44403c 60%, transparent 60%, transparent 70%, #44403c 70%, #44403c 80%, transparent 80%)",
-        }}
+        className="absolute bottom-0 right-0 h-5 w-5 cursor-nwse-resize z-10"
       />
     </div>
   );
