@@ -13,7 +13,8 @@ export function Sidebar(): JSX.Element {
   const setView = useUi((s) => s.setView);
   const project = useUi((s) => s.project);
   const setProject = useUi((s) => s.setProject);
-  const activeSubagents = useUi((s) => s.activeSubagents);
+  const statuses = useUi((s) => s.statuses);
+  const activeSubagents = Object.values(statuses).filter((v) => v === "running").length;
   const theme = useUi((s) => s.theme);
   const toggleTheme = useUi((s) => s.toggleTheme);
 

@@ -6,7 +6,6 @@ import type {
 } from "../shared";
 import { AgentBlockCard } from "./AgentBlockCard";
 import { AgentWindow } from "./AgentWindow";
-import { QuantumCore } from "./QuantumCore";
 import { useUi, type RunStatus } from "./store";
 
 const BLOCK_WIDTH = 224;
@@ -70,13 +69,10 @@ export function Canvas({
 
   const openWindows = useUi((s) => s.openWindows);
   const minimizedWindows = useUi((s) => s.minimizedWindows);
-  const quantumWindows = useUi((s) => s.quantumWindows);
   const toggleWindow = useUi((s) => s.toggleWindow);
   const closeWindow = useUi((s) => s.closeWindow);
   const minimizeWindow = useUi((s) => s.minimizeWindow);
   const restoreWindow = useUi((s) => s.restoreWindow);
-  const toQuantum = useUi((s) => s.toQuantum);
-  const toTerminal = useUi((s) => s.toTerminal);
   const perAgentActivity = useUi((s) => s.perAgentActivity);
 
   const onBlockMouseDown = useCallback(
@@ -86,9 +82,6 @@ export function Canvas({
       const rect = container.getBoundingClientRect();
       const name = agent.frontmatter.name;
 
-      // If user clicks on a non-selected block while holding nothing, that
-      // block becomes the only selection. If the block is already part of a
-      // multi-select, drag the whole group.
       if (selected.has(name) && selected.size > 1) {
         dragState.current = {
           kind: "group",
@@ -98,7 +91,6 @@ export function Canvas({
           startPositions: { ...livePositions.current },
         };
       } else {
-        // Single-select on click; group selection is dropped.
         if (!(selected.size === 1 && selected.has(name))) {
           setSelected(new Set([name]));
         }
@@ -118,8 +110,6 @@ export function Canvas({
 
   const onCanvasMouseDown = useCallback(
     (e: React.MouseEvent) => {
-      // Only start lasso when the user clicks on the empty canvas, not on a
-      // child element (block, window, button).
       if (e.target !== e.currentTarget) return;
       const container = containerRef.current;
       if (!container) return;
@@ -167,7 +157,6 @@ export function Canvas({
         return;
       }
 
-      // lasso
       const x = e.clientX - rect.left + container.scrollLeft;
       const y = e.clientY - rect.top + container.scrollTop;
       ds.curX = x;
@@ -242,7 +231,6 @@ export function Canvas({
         statuses={statuses}
         theme={theme}
         activeNames={openWindows.filter((n) => !minimizedWindows.includes(n))}
-        quantumNames={quantumWindows}
       />
 
       {agents.map((a) => {
@@ -277,12 +265,10 @@ export function Canvas({
         );
       })}
 
-      {/* AgentWindow terminals — shown when window is open and NOT in quantum mode */}
       {agents.map((a) => {
         const name = a.frontmatter.name;
         if (!openWindows.includes(name)) return null;
         if (minimizedWindows.includes(name)) return null;
-        if (quantumWindows.includes(name)) return null;
         const frame = windowFrames[name] ?? defaultFrameFor(positions[name]);
         return (
           <div key={`win-${name}`} style={{ zIndex: 20 }}>
@@ -296,7 +282,6 @@ export function Canvas({
               onMoveCommit={() => onWindowFrameCommit(liveFrames.current)}
               onClose={() => closeWindow(name)}
               onMinimize={() => minimizeWindow(name)}
-              onToQuantum={() => toQuantum(name)}
               onClear={() => {
                 useUi.setState((s) => ({
                   perAgentActivity: { ...s.perAgentActivity, [name]: [] },
@@ -304,26 +289,6 @@ export function Canvas({
               }}
             />
           </div>
-        );
-      })}
-
-      {/* QuantumCore widgets — shown when window is open and in quantum mode */}
-      {agents.map((a) => {
-        const name = a.frontmatter.name;
-        if (!openWindows.includes(name)) return null;
-        if (minimizedWindows.includes(name)) return null;
-        if (!quantumWindows.includes(name)) return null;
-        const frame = windowFrames[name] ?? defaultFrameFor(positions[name]);
-        return (
-          <QuantumWidget
-            key={`qc-${name}`}
-            agentName={name}
-            status={statuses[name] ?? "idle"}
-            frame={frame}
-            onMove={(f) => onWindowFrameChange(name, f)}
-            onMoveCommit={() => onWindowFrameCommit(liveFrames.current)}
-            onToTerminal={() => toTerminal(name)}
-          />
         );
       })}
 
@@ -403,104 +368,9 @@ function defaultFrameFor(blockPos: NodePosition | undefined): WindowFrame {
   return {
     x: base.x + BLOCK_WIDTH + 80,
     y: base.y,
-    width: 180,
-    height: 180,
+    width: 420,
+    height: 280,
   };
-}
-
-function QuantumWidget({
-  agentName,
-  status,
-  frame,
-  onMove,
-  onMoveCommit,
-  onToTerminal,
-}: {
-  agentName: string;
-  status: RunStatus;
-  frame: WindowFrame;
-  onMove: (f: WindowFrame) => void;
-  onMoveCommit: (f: WindowFrame) => void;
-  onToTerminal: () => void;
-}): JSX.Element {
-  const dragRef = useRef<{
-    mode: "move" | "resize";
-    startX: number;
-    startY: number;
-    startFrame: WindowFrame;
-  } | null>(null);
-  const liveRef = useRef(frame);
-  liveRef.current = frame;
-
-  const onHeaderMouseDown = useCallback(
-    (e: React.MouseEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      dragRef.current = { mode: "move", startX: e.clientX, startY: e.clientY, startFrame: { ...frame } };
-    },
-    [frame],
-  );
-
-  const onResizeMouseDown = useCallback(
-    (e: React.MouseEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      dragRef.current = { mode: "resize", startX: e.clientX, startY: e.clientY, startFrame: { ...frame } };
-    },
-    [frame],
-  );
-
-  useEffect(() => {
-    function onMouseMove(e: MouseEvent): void {
-      const ds = dragRef.current;
-      if (!ds) return;
-      const dx = e.clientX - ds.startX;
-      const dy = e.clientY - ds.startY;
-      if (ds.mode === "move") {
-        onMove({ x: Math.max(0, ds.startFrame.x + dx), y: Math.max(0, ds.startFrame.y + dy), width: ds.startFrame.width, height: ds.startFrame.height });
-      } else {
-        // Keep square: use the larger delta to drive both dimensions
-        const side = Math.max(140, ds.startFrame.width + dx, ds.startFrame.height + dy);
-        onMove({ x: ds.startFrame.x, y: ds.startFrame.y, width: side, height: side });
-      }
-    }
-    function onMouseUp(): void {
-      if (dragRef.current) { dragRef.current = null; onMoveCommit(liveRef.current); }
-    }
-    window.addEventListener("mousemove", onMouseMove);
-    window.addEventListener("mouseup", onMouseUp);
-    return () => {
-      window.removeEventListener("mousemove", onMouseMove);
-      window.removeEventListener("mouseup", onMouseUp);
-    };
-  }, [onMove, onMoveCommit]);
-
-  // size = square side; QuantumCore fills the frame
-  const size = Math.min(frame.width, frame.height);
-
-  return (
-    <div
-      className="absolute"
-      style={{ left: frame.x, top: frame.y, width: frame.width, height: frame.height, zIndex: 20 }}
-    >
-      {/* full-area drag + double-click zone */}
-      <div
-        onMouseDown={onHeaderMouseDown}
-        onDoubleClick={onToTerminal}
-        title="Double-click to open terminal · drag to move"
-        className="absolute inset-0 flex items-center justify-center"
-        style={{ cursor: "grab" }}
-      >
-        <QuantumCore agentName={agentName} status={status} size={size} />
-      </div>
-
-      {/* resize handle — tiny dot bottom-right */}
-      <div
-        onMouseDown={onResizeMouseDown}
-        className="absolute bottom-0 right-0 h-5 w-5 cursor-nwse-resize z-10"
-      />
-    </div>
-  );
 }
 
 interface Route {
@@ -519,7 +389,6 @@ function ConnectionLayer({
   statuses,
   theme,
   activeNames,
-  quantumNames,
 }: {
   agents: Agent[];
   positions: Record<string, NodePosition>;
@@ -527,7 +396,6 @@ function ConnectionLayer({
   statuses: Record<string, RunStatus>;
   theme: "light" | "dark";
   activeNames: string[];
-  quantumNames: string[];
 }): JSX.Element {
   const lines = agents
     .map((a) => {
@@ -536,8 +404,7 @@ function ConnectionLayer({
       const block = positions[name];
       const win = windowFrames[name] ?? defaultFrameFor(block);
       if (!block) return null;
-      const isQuantum = quantumNames.includes(name);
-      const route = computeRoute(block, win, name, isQuantum);
+      const route = computeRoute(block, win, name);
       const isRunning = statuses[name] === "running";
       return { ...route, isRunning };
     })
@@ -583,7 +450,6 @@ function computeRoute(
   block: NodePosition,
   win: WindowFrame,
   name: string,
-  isQuantum = false,
 ): Route {
   const blockBox = {
     left: block.x,
@@ -594,42 +460,13 @@ function computeRoute(
     cy: block.y + BLOCK_HEIGHT_APPROX / 2,
   };
 
-  const wcx = win.x + win.width / 2;
-  const wcy = win.y + win.height / 2;
-
-  let winBox: { left: number; right: number; top: number; bottom: number; cx: number; cy: number };
-
-  if (isQuantum) {
-    // Line terminates at the outer ring surface (r * 0.88 of the smaller dimension)
-    const outerR = Math.min(win.width, win.height) / 2 * 0.88;
-    // Direction from block center to quantum core center
-    const dx = wcx - blockBox.cx;
-    const dy = wcy - blockBox.cy;
-    const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-    const nx = dx / dist;
-    const ny = dy / dist;
-    // Surface point on the outer ring toward the block
-    const sx = wcx - nx * outerR;
-    const sy = wcy - ny * outerR;
-    // Collapse winBox to that surface point so the route ends there
-    winBox = { left: sx, right: sx, top: sy, bottom: sy, cx: wcx, cy: wcy };
-    // For the B endpoint we use the surface point directly
-    const ax = blockBox.right;
-    const ay = blockBox.cy;
-    const bx = sx;
-    const by = sy;
-    const midX = (ax + bx) / 2;
-    const path = `M ${ax} ${ay} C ${midX} ${ay}, ${midX} ${by}, ${bx} ${by}`;
-    return { name, path, ax, ay, bx, by };
-  }
-
-  winBox = {
+  const winBox = {
     left: win.x,
     right: win.x + win.width,
     top: win.y,
     bottom: win.y + win.height,
-    cx: wcx,
-    cy: wcy,
+    cx: win.x + win.width / 2,
+    cy: win.y + win.height / 2,
   };
 
   const horizGap = Math.max(

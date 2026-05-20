@@ -13,7 +13,6 @@ interface Props {
   onClose: () => void;
   onClear: () => void;
   onMinimize: () => void;
-  onToQuantum: () => void;
 }
 
 export function AgentWindow({
@@ -27,7 +26,6 @@ export function AgentWindow({
   onClose,
   onClear,
   onMinimize,
-  onToQuantum,
 }: Props): JSX.Element {
   const dragRef = useRef<{
     mode: "move" | "resize";
@@ -177,7 +175,7 @@ export function AgentWindow({
         </div>
       </header>
 
-      <ScrollLog activity={activity} agentName={agentName} onDoubleClick={onToQuantum} />
+      <ScrollLog activity={activity} agentName={agentName} />
 
       <div
         onMouseDown={onResizeMouseDown}
@@ -194,11 +192,9 @@ export function AgentWindow({
 function ScrollLog({
   activity,
   agentName,
-  onDoubleClick,
 }: {
   activity: AgentActivityEntry[];
   agentName: string;
-  onDoubleClick: () => void;
 }): JSX.Element {
   const ref = useRef<HTMLDivElement>(null);
   const ordered = [...activity].reverse();
@@ -212,9 +208,7 @@ function ScrollLog({
   return (
     <div
       ref={ref}
-      onDoubleClick={onDoubleClick}
-      title="Double-click to switch to Quantum view"
-      className="flex-1 overflow-auto bg-stone-950 px-3 py-2 font-mono text-[11px] text-stone-100 cursor-pointer"
+      className="flex-1 overflow-auto bg-stone-950 px-3 py-2 font-mono text-[11px] text-stone-100"
     >
       {ordered.length === 0 ? (
         <div className="text-stone-500">

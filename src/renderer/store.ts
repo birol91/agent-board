@@ -54,22 +54,18 @@ interface UiStore {
   setSelectedAgent: (a: Agent | null) => void;
   statuses: Record<string, RunStatus>;
   setStatus: (agentName: string, status: RunStatus) => void;
-  activeSubagents: number;
   activity: ActivityEntry[];
   perAgentActivity: Record<string, AgentActivityEntry[]>;
   pendingByAgentId: Record<string, AgentActivityEntry[]>;
   agentIdToName: Record<string, string>;
   openWindows: string[];
   minimizedWindows: string[];
-  quantumWindows: string[];
   setOpenWindows: (names: string[]) => void;
   closeAllWindows: () => void;
   toggleWindow: (agentName: string) => void;
   closeWindow: (agentName: string) => void;
   minimizeWindow: (agentName: string) => void;
   restoreWindow: (agentName: string) => void;
-  toQuantum: (agentName: string) => void;
-  toTerminal: (agentName: string) => void;
   ingestHookEvent: (e: HookEvent) => void;
   restartHintAt: number | null;
   flagRestartNeeded: () => void;
@@ -108,31 +104,27 @@ export const useUi = create<UiStore>((set) => ({
   statuses: {},
   setStatus: (name, status) =>
     set((s) => ({ statuses: { ...s.statuses, [name]: status } })),
-  activeSubagents: 0,
   activity: [],
   perAgentActivity: {},
   pendingByAgentId: {},
   agentIdToName: {},
   openWindows: [],
   minimizedWindows: [],
-  quantumWindows: [],
   setOpenWindows: (names) =>
-    set({ openWindows: [...names], minimizedWindows: [], quantumWindows: [] }),
+    set({ openWindows: [...names], minimizedWindows: [] }),
   closeAllWindows: () =>
-    set({ openWindows: [], minimizedWindows: [], quantumWindows: [] }),
+    set({ openWindows: [], minimizedWindows: [] }),
   toggleWindow: (name) =>
     set((s) => ({
       openWindows: s.openWindows.includes(name)
         ? s.openWindows.filter((n) => n !== name)
         : [...s.openWindows, name],
       minimizedWindows: s.minimizedWindows.filter((n) => n !== name),
-      quantumWindows: s.quantumWindows.filter((n) => n !== name),
     })),
   closeWindow: (name) =>
     set((s) => ({
       openWindows: s.openWindows.filter((n) => n !== name),
       minimizedWindows: s.minimizedWindows.filter((n) => n !== name),
-      quantumWindows: s.quantumWindows.filter((n) => n !== name),
     })),
   minimizeWindow: (name) =>
     set((s) => ({
@@ -143,16 +135,6 @@ export const useUi = create<UiStore>((set) => ({
   restoreWindow: (name) =>
     set((s) => ({
       minimizedWindows: s.minimizedWindows.filter((n) => n !== name),
-    })),
-  toQuantum: (name) =>
-    set((s) => ({
-      quantumWindows: s.quantumWindows.includes(name)
-        ? s.quantumWindows
-        : [...s.quantumWindows, name],
-    })),
-  toTerminal: (name) =>
-    set((s) => ({
-      quantumWindows: s.quantumWindows.filter((n) => n !== name),
     })),
   restartHintAt: null,
   flagRestartNeeded: () => set({ restartHintAt: Date.now() }),
@@ -165,7 +147,6 @@ export const useUi = create<UiStore>((set) => ({
       const pendingByAgentId = { ...s.pendingByAgentId };
       const agentIdToName = { ...s.agentIdToName };
       const id = `${e.timestamp}-${Math.random().toString(36).slice(2, 8)}`;
-      let activeSubagents = s.activeSubagents;
 
       const pushToAgent = (
         name: string,
@@ -205,9 +186,6 @@ export const useUi = create<UiStore>((set) => ({
 
       if (e.type === "SubagentStart") {
         if (!e.agentName) {
-          activeSubagents += 1;
-          // Buffer a synthetic "started" entry under the agent_id so we can
-          // attach it to the resolved agent later.
           if (e.agentId) {
             pushPending(e.agentId, {
               id,
@@ -241,7 +219,6 @@ export const useUi = create<UiStore>((set) => ({
           });
         }
       } else if (e.type === "SubagentStop") {
-        activeSubagents = Math.max(0, activeSubagents - 1);
         if (e.agentName) {
           statuses[e.agentName] = "idle";
           if (e.agentId) {
@@ -312,7 +289,6 @@ export const useUi = create<UiStore>((set) => ({
 
       return {
         statuses,
-        activeSubagents,
         activity: activity.slice(0, MAX_ACTIVITY),
         perAgentActivity,
         pendingByAgentId,

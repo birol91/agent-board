@@ -24,6 +24,10 @@ export function ProjectView(): JSX.Element {
     Record<string, WindowFrame>
   >({});
   const restoredOpenWindowsForProject = useRef<string | null>(null);
+  const positionsRef = useRef(positions);
+  positionsRef.current = positions;
+  const windowFramesRef = useRef(windowFrames);
+  windowFramesRef.current = windowFrames;
 
   useEffect(() => {
     if (!project) return;
@@ -87,8 +91,8 @@ export function ProjectView(): JSX.Element {
   }, [project, setOpenWindows]);
 
   // Persist open-windows whenever the user opens/closes one.
-  // We compare against the current project layout to skip the no-op
-  // initial save that fires right after restore.
+  // Uses refs for positions/windowFrames to avoid stale-closure overwrites
+  // when the effect fires before those state updates have committed.
   useEffect(() => {
     if (!project) return;
     if (restoredOpenWindowsForProject.current !== project.rootPath) return;
@@ -100,12 +104,12 @@ export function ProjectView(): JSX.Element {
       return;
     }
     const layout: LayoutMap = {
-      agents: positions,
-      windows: windowFrames,
+      agents: positionsRef.current,
+      windows: windowFramesRef.current,
       openWindows,
     };
     void call("layout:save", { rootPath: project.rootPath, layout });
-  }, [openWindows, project, positions, windowFrames]);
+  }, [openWindows, project]);
 
   const reload = useCallback(async () => {
     if (!project) return;
@@ -259,7 +263,8 @@ export function ProjectView(): JSX.Element {
 }
 
 function ActiveBadge(): JSX.Element | null {
-  const activeSubagents = useUi((s) => s.activeSubagents);
+  const statuses = useUi((s) => s.statuses);
+  const activeSubagents = Object.values(statuses).filter((v) => v === "running").length;
   if (activeSubagents === 0) return null;
   return (
     <span className="flex items-center gap-1 rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
