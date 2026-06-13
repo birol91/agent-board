@@ -15,15 +15,12 @@ interface KnownAgent {
  *      description text — fragile, only works when the system prompt
  *      happens to land in transcript content.
  */
-// Built-in Claude Code agent types that should never light up a project block.
+// Built-in Claude Code agent types that are never user-defined project agents.
 const BUILTIN_TYPES = new Set([
   "general-purpose",
   "claude",
   "Explore",
   "claude-code-guide",
-  "data-engineer",
-  "data-scientist",
-  "ai-engineer",
   "code-reviewer",
   "Plan",
   "statusline-setup",
