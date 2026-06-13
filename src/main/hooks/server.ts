@@ -103,17 +103,24 @@ async function pollResolveAndAnnounce(
   event: HookEvent & { type: "SubagentStart" },
   transcriptPath: string,
 ): Promise<void> {
+  const metaPath = transcriptPath.replace(/\.jsonl$/, ".meta.json");
   const deadline = Date.now() + 60_000;
   let delay = 150;
   while (Date.now() < deadline) {
     await new Promise((r) => setTimeout(r, delay));
     delay = Math.min(delay * 1.4, 2000);
 
-    // Wait for transcript file to exist before trying to resolve.
+    // Wait for meta.json first — it's the most reliable source and
+    // appears shortly after the subagent starts. Transcript may arrive later.
     try {
-      await fs.access(transcriptPath);
+      await fs.access(metaPath);
     } catch {
-      continue;
+      // meta.json not yet written — also check transcript as fallback
+      try {
+        await fs.access(transcriptPath);
+      } catch {
+        continue;
+      }
     }
 
     const name = await tryResolveAgent(event.cwd, transcriptPath);
