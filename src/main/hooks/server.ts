@@ -104,10 +104,18 @@ async function pollResolveAndAnnounce(
   transcriptPath: string,
 ): Promise<void> {
   const deadline = Date.now() + 60_000;
-  let delay = 200;
+  let delay = 150;
   while (Date.now() < deadline) {
     await new Promise((r) => setTimeout(r, delay));
-    delay = Math.min(delay * 1.3, 2000);
+    delay = Math.min(delay * 1.4, 2000);
+
+    // Wait for transcript file to exist before trying to resolve.
+    try {
+      await fs.access(transcriptPath);
+    } catch {
+      continue;
+    }
+
     const name = await tryResolveAgent(event.cwd, transcriptPath);
     if (name) {
       broadcast({ ...event, agentName: name });

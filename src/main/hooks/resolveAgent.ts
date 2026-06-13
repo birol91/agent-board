@@ -15,34 +15,67 @@ interface KnownAgent {
  *      description text — fragile, only works when the system prompt
  *      happens to land in transcript content.
  */
+// Built-in Claude Code agent types that should never light up a project block.
+const BUILTIN_TYPES = new Set([
+  "general-purpose",
+  "claude",
+  "Explore",
+  "claude-code-guide",
+  "data-engineer",
+  "data-scientist",
+  "ai-engineer",
+  "code-reviewer",
+  "Plan",
+  "statusline-setup",
+]);
+
 export async function resolveAgentNameFromTranscript(
   transcriptPath: string,
   knownAgents: KnownAgent[],
 ): Promise<string | null> {
-  // 1. meta.json — the reliable path.
+  if (knownAgents.length === 0) return null;
+
+  // 1. meta.json — most reliable when agentType matches a known project agent.
   const metaPath = transcriptPath.replace(/\.jsonl$/, ".meta.json");
   try {
     const raw = await fs.readFile(metaPath, "utf8");
     const parsed = JSON.parse(raw) as { agentType?: unknown };
     if (typeof parsed.agentType === "string" && parsed.agentType.length > 0) {
-      // Only return it if the project actually has this agent installed.
-      // Built-in types like "general-purpose" should not light up a block.
-      const known = knownAgents.find((a) => a.name === parsed.agentType);
-      if (known) return known.name;
+      const agentType = parsed.agentType;
+      // Exact match against installed project agents.
+      const exact = knownAgents.find((a) => a.name === agentType);
+      if (exact) return exact.name;
+      // If it's NOT a known built-in, it might be a custom agent with a
+      // slightly different casing — try case-insensitive match.
+      if (!BUILTIN_TYPES.has(agentType)) {
+        const ci = knownAgents.find(
+          (a) => a.name.toLowerCase() === agentType.toLowerCase(),
+        );
+        if (ci) return ci.name;
+      }
     }
   } catch {
-    // fall through to transcript scanning
+    // fall through
   }
 
-  // 2. Description fingerprint fallback.
-  if (knownAgents.length === 0) return null;
+  // 2. Scan the transcript JSONL for agent name mentions in content fields.
   let raw: string;
   try {
     raw = await fs.readFile(transcriptPath, "utf8");
   } catch {
     return null;
   }
-  const haystack = raw.slice(0, 16_000).toLowerCase();
+
+  const haystack = raw.slice(0, 32_000).toLowerCase();
+
+  // Try matching by agent name appearing in the transcript text.
+  for (const a of knownAgents) {
+    if (haystack.includes(a.name.toLowerCase())) {
+      return a.name;
+    }
+  }
+
+  // Try matching by description fingerprint.
   let best: { name: string; score: number } | null = null;
   for (const a of knownAgents) {
     const desc = (a.description || "").toLowerCase();
