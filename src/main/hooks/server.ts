@@ -111,15 +111,29 @@ async function pollResolveAndAnnounce(
   event: HookEvent & { type: "SubagentStart" },
   transcriptPath: string,
 ): Promise<void> {
+  const metaPath = transcriptPath.replace(/\.jsonl$/, ".meta.json");
   const deadline = Date.now() + 60_000;
-  let delay = 200;
+  let delay = 150;
   while (Date.now() < deadline) {
     // If the agent already stopped, broadcasting a resolved Start now would
     // leave the card stuck as "running" with no subsequent Stop to clear it.
     if (event.agentId && stoppedAgentIds.has(event.agentId)) return;
     await new Promise((r) => setTimeout(r, delay));
-    delay = Math.min(delay * 1.3, 2000);
+    delay = Math.min(delay * 1.4, 2000);
     if (event.agentId && stoppedAgentIds.has(event.agentId)) return;
+
+    // Wait for meta.json first — it's the most reliable source and
+    // appears shortly after the subagent starts. Transcript may arrive later.
+    try {
+      await fs.access(metaPath);
+    } catch {
+      try {
+        await fs.access(transcriptPath);
+      } catch {
+        continue;
+      }
+    }
+
     const name = await tryResolveAgent(event.cwd, transcriptPath);
     if (name) {
       if (event.agentId && stoppedAgentIds.has(event.agentId)) return;

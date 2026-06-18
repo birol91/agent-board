@@ -13,7 +13,8 @@ export function Sidebar(): JSX.Element {
   const setView = useUi((s) => s.setView);
   const project = useUi((s) => s.project);
   const setProject = useUi((s) => s.setProject);
-  const activeSubagents = useUi((s) => s.activeSubagents);
+  const statuses = useUi((s) => s.statuses);
+  const activeSubagents = Object.values(statuses).filter((v) => v === "running").length;
   const theme = useUi((s) => s.theme);
   const toggleTheme = useUi((s) => s.toggleTheme);
 
@@ -69,7 +70,7 @@ export function Sidebar(): JSX.Element {
         <div className="text-sm font-semibold text-stone-900 dark:text-slate-100">
           AgentBoard
         </div>
-        <div className="text-xs text-stone-500 dark:text-slate-500">v1.0.0</div>
+        <div className="text-xs text-stone-500 dark:text-slate-500">v1.0.2</div>
         <div className="mt-3 rounded-md border border-claude-200 bg-claude-50/60 px-2 py-1.5 dark:border-claude-700/50 dark:bg-claude-900/20 dark:shadow-claude-glow">
           <div className="text-[10px] font-medium uppercase tracking-wide text-claude-700 dark:text-claude-400">
             Main

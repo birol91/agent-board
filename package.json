@@ -1,6 +1,6 @@
 {
   "name": "agent-board",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "private": true,
   "description": "Visual control panel for Claude Code agents, skills, memory, and configuration.",
   "license": "MIT",

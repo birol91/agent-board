@@ -82,9 +82,6 @@ export function Canvas({
       const rect = container.getBoundingClientRect();
       const name = agent.frontmatter.name;
 
-      // If user clicks on a non-selected block while holding nothing, that
-      // block becomes the only selection. If the block is already part of a
-      // multi-select, drag the whole group.
       if (selected.has(name) && selected.size > 1) {
         dragState.current = {
           kind: "group",
@@ -94,7 +91,6 @@ export function Canvas({
           startPositions: { ...livePositions.current },
         };
       } else {
-        // Single-select on click; group selection is dropped.
         if (!(selected.size === 1 && selected.has(name))) {
           setSelected(new Set([name]));
         }
@@ -114,8 +110,6 @@ export function Canvas({
 
   const onCanvasMouseDown = useCallback(
     (e: React.MouseEvent) => {
-      // Only start lasso when the user clicks on the empty canvas, not on a
-      // child element (block, window, button).
       if (e.target !== e.currentTarget) return;
       const container = containerRef.current;
       if (!container) return;
@@ -163,7 +157,6 @@ export function Canvas({
         return;
       }
 
-      // lasso
       const x = e.clientX - rect.left + container.scrollLeft;
       const y = e.clientY - rect.top + container.scrollTop;
       ds.curX = x;
@@ -237,7 +230,7 @@ export function Canvas({
         windowFrames={windowFrames}
         statuses={statuses}
         theme={theme}
-        openWindows={openWindows.filter((n) => !minimizedWindows.includes(n))}
+        activeNames={openWindows.filter((n) => !minimizedWindows.includes(n))}
       />
 
       {agents.map((a) => {
@@ -375,7 +368,7 @@ function defaultFrameFor(blockPos: NodePosition | undefined): WindowFrame {
   return {
     x: base.x + BLOCK_WIDTH + 80,
     y: base.y,
-    width: 360,
+    width: 420,
     height: 280,
   };
 }
@@ -395,19 +388,19 @@ function ConnectionLayer({
   windowFrames,
   statuses,
   theme,
-  openWindows,
+  activeNames,
 }: {
   agents: Agent[];
   positions: Record<string, NodePosition>;
   windowFrames: Record<string, WindowFrame>;
   statuses: Record<string, RunStatus>;
   theme: "light" | "dark";
-  openWindows: string[];
+  activeNames: string[];
 }): JSX.Element {
   const lines = agents
     .map((a) => {
       const name = a.frontmatter.name;
-      if (!openWindows.includes(name)) return null;
+      if (!activeNames.includes(name)) return null;
       const block = positions[name];
       const win = windowFrames[name] ?? defaultFrameFor(block);
       if (!block) return null;
@@ -466,6 +459,7 @@ function computeRoute(
     cx: block.x + BLOCK_WIDTH / 2,
     cy: block.y + BLOCK_HEIGHT_APPROX / 2,
   };
+
   const winBox = {
     left: win.x,
     right: win.x + win.width,
@@ -499,10 +493,7 @@ function computeRoute(
     ay = blockBox.cy;
     by = winBox.cy;
     const midX = (ax + bx) / 2;
-    c1x = midX;
-    c1y = ay;
-    c2x = midX;
-    c2y = by;
+    c1x = midX; c1y = ay; c2x = midX; c2y = by;
   } else {
     if (winBox.cy > blockBox.cy) {
       ay = blockBox.bottom;
@@ -514,10 +505,7 @@ function computeRoute(
     ax = blockBox.cx;
     bx = winBox.cx;
     const midY = (ay + by) / 2;
-    c1x = ax;
-    c1y = midY;
-    c2x = bx;
-    c2y = midY;
+    c1x = ax; c1y = midY; c2x = bx; c2y = midY;
   }
 
   const path = `M ${ax} ${ay} C ${c1x} ${c1y}, ${c2x} ${c2y}, ${bx} ${by}`;

@@ -2,6 +2,7 @@ import { create } from "zustand";
 import type { Agent, HookEvent, Project } from "../shared";
 
 export type View = "picker" | "setup" | "project" | "marketplace";
+export type MarketplaceTab = "agents" | "skills";
 export type RunStatus = "idle" | "running" | "waiting" | "disabled";
 export type Theme = "light" | "dark";
 
@@ -44,13 +45,15 @@ interface UiStore {
   toggleTheme: () => void;
   view: View;
   setView: (v: View) => void;
+  marketplaceTab: MarketplaceTab;
+  setMarketplaceTab: (t: MarketplaceTab) => void;
+  openMarketplace: (tab: MarketplaceTab) => void;
   project: Project | null;
   setProject: (p: Project | null) => void;
   selectedAgent: Agent | null;
   setSelectedAgent: (a: Agent | null) => void;
   statuses: Record<string, RunStatus>;
   setStatus: (agentName: string, status: RunStatus) => void;
-  activeSubagents: number;
   activity: ActivityEntry[];
   perAgentActivity: Record<string, AgentActivityEntry[]>;
   pendingByAgentId: Record<string, AgentActivityEntry[]>;
@@ -91,6 +94,9 @@ export const useUi = create<UiStore>((set) => ({
     }),
   view: "picker",
   setView: (view) => set({ view }),
+  marketplaceTab: "agents",
+  setMarketplaceTab: (marketplaceTab) => set({ marketplaceTab }),
+  openMarketplace: (tab) => set({ view: "marketplace", marketplaceTab: tab }),
   project: null,
   setProject: (project) => set({ project }),
   selectedAgent: null,
@@ -98,7 +104,6 @@ export const useUi = create<UiStore>((set) => ({
   statuses: {},
   setStatus: (name, status) =>
     set((s) => ({ statuses: { ...s.statuses, [name]: status } })),
-  activeSubagents: 0,
   activity: [],
   perAgentActivity: {},
   pendingByAgentId: {},
@@ -142,7 +147,6 @@ export const useUi = create<UiStore>((set) => ({
       const pendingByAgentId = { ...s.pendingByAgentId };
       const agentIdToName = { ...s.agentIdToName };
       const id = `${e.timestamp}-${Math.random().toString(36).slice(2, 8)}`;
-      let activeSubagents = s.activeSubagents;
 
       const pushToAgent = (
         name: string,
@@ -182,9 +186,6 @@ export const useUi = create<UiStore>((set) => ({
 
       if (e.type === "SubagentStart") {
         if (!e.agentName) {
-          activeSubagents += 1;
-          // Buffer a synthetic "started" entry under the agent_id so we can
-          // attach it to the resolved agent later.
           if (e.agentId) {
             pushPending(e.agentId, {
               id,
@@ -218,7 +219,6 @@ export const useUi = create<UiStore>((set) => ({
           });
         }
       } else if (e.type === "SubagentStop") {
-        activeSubagents = Math.max(0, activeSubagents - 1);
         if (e.agentName) {
           statuses[e.agentName] = "idle";
           if (e.agentId) {
@@ -289,7 +289,6 @@ export const useUi = create<UiStore>((set) => ({
 
       return {
         statuses,
-        activeSubagents,
         activity: activity.slice(0, MAX_ACTIVITY),
         perAgentActivity,
         pendingByAgentId,
