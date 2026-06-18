@@ -15,6 +15,14 @@ const SOCKET_PATH = isWindows
   : path.join(tmpdir(), "agent-board.sock");
 let server: Server | null = null;
 
+// agentIds whose name has been broadcast in a resolved SubagentStart event.
+// Used by SubagentStop to decide whether to send a retroactive Start.
+const resolvedStartAgentIds = new Set<string>();
+// agentIds that have stopped. Prevents pollResolveAndAnnounce from broadcasting
+// a resolved SubagentStart after SubagentStop has already been processed,
+// which would leave the agent card stuck as "running".
+const stoppedAgentIds = new Set<string>();
+
 /**
  * On macOS/Linux: filesystem path to the Unix domain socket.
  * On Windows: full \\.\pipe\... path used by net.createServer.
@@ -106,10 +114,16 @@ async function pollResolveAndAnnounce(
   const deadline = Date.now() + 60_000;
   let delay = 200;
   while (Date.now() < deadline) {
+    // If the agent already stopped, broadcasting a resolved Start now would
+    // leave the card stuck as "running" with no subsequent Stop to clear it.
+    if (event.agentId && stoppedAgentIds.has(event.agentId)) return;
     await new Promise((r) => setTimeout(r, delay));
     delay = Math.min(delay * 1.3, 2000);
+    if (event.agentId && stoppedAgentIds.has(event.agentId)) return;
     const name = await tryResolveAgent(event.cwd, transcriptPath);
     if (name) {
+      if (event.agentId && stoppedAgentIds.has(event.agentId)) return;
+      if (event.agentId) resolvedStartAgentIds.add(event.agentId);
       broadcast({ ...event, agentName: name });
       return;
     }
@@ -126,13 +140,17 @@ async function handleLine(line: string): Promise<void> {
   }
 
   if (event.type === "SubagentStart") {
+    // If the hook payload already carries the agent name, mark it resolved now.
+    if (event.agentName && event.agentId) {
+      resolvedStartAgentIds.add(event.agentId);
+    }
     // Send the start event immediately for the "active" badge,
     // then resolve agent name in the background.
     broadcast(event);
     const transcript =
       event.agentTranscriptPath ??
       deriveAgentTranscriptPath(event.transcriptPath, event.agentId);
-    if (transcript) {
+    if (transcript && !event.agentName) {
       void pollResolveAndAnnounce(event, transcript).catch((err) =>
         logError("hooks:resolveStart", err),
       );
@@ -140,21 +158,44 @@ async function handleLine(line: string): Promise<void> {
     return;
   }
 
-  if (
-    event.type === "SubagentStop" &&
-    !event.agentName &&
-    (event.agentTranscriptPath || event.transcriptPath)
-  ) {
-    try {
-      const transcript =
-        event.agentTranscriptPath ??
-        deriveAgentTranscriptPath(event.transcriptPath, event.agentId);
-      if (transcript) {
-        const name = await tryResolveAgent(event.cwd, transcript);
-        if (name) event.agentName = name;
+  if (event.type === "SubagentStop") {
+    // Mark as stopped before any async work so the poll loop sees it promptly.
+    if (event.agentId) stoppedAgentIds.add(event.agentId);
+
+    if (
+      !event.agentName &&
+      (event.agentTranscriptPath || event.transcriptPath)
+    ) {
+      try {
+        const transcript =
+          event.agentTranscriptPath ??
+          deriveAgentTranscriptPath(event.transcriptPath, event.agentId);
+        if (transcript) {
+          const name = await tryResolveAgent(event.cwd, transcript);
+          if (name) {
+            event.agentName = name;
+            // If the background poll never broadcast a resolved Start for this
+            // agent (e.g. the agent finished before the first poll tick), send
+            // a retroactive Start now so the activity log and card reflect that
+            // the agent actually ran.
+            if (event.agentId && !resolvedStartAgentIds.has(event.agentId)) {
+              resolvedStartAgentIds.add(event.agentId);
+              broadcast({
+                type: "SubagentStart",
+                timestamp: event.timestamp,
+                sessionId: event.sessionId,
+                agentId: event.agentId,
+                agentName: name,
+                agentTranscriptPath: event.agentTranscriptPath,
+                transcriptPath: event.transcriptPath,
+                cwd: event.cwd,
+              });
+            }
+          }
+        }
+      } catch (err) {
+        void logError("hooks:resolveStop", err);
       }
-    } catch (err) {
-      void logError("hooks:resolveStop", err);
     }
   }
 
