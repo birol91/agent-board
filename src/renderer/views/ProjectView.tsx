@@ -264,12 +264,22 @@ export function ProjectView(): JSX.Element {
 
 function ActiveBadge(): JSX.Element | null {
   const statuses = useUi((s) => s.statuses);
+  const unresolvedActive = useUi((s) => s.unresolvedActive);
   const activeSubagents = Object.values(statuses).filter((v) => v === "running").length;
-  if (activeSubagents === 0) return null;
+  // Subagents whose name never matched an installed block (workflow-subagent,
+  // Explore, general-purpose, …). They have no card to turn green, so surface
+  // them as a count here instead.
+  const unnamedSubagents = Object.keys(unresolvedActive).length;
+  if (activeSubagents === 0 && unnamedSubagents === 0) return null;
   return (
     <span className="flex items-center gap-1 rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
       <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
       {activeSubagents} active
+      {unnamedSubagents > 0 && (
+        <span className="text-emerald-600/80 dark:text-emerald-400/80">
+          · +{unnamedSubagents} subagent
+        </span>
+      )}
     </span>
   );
 }

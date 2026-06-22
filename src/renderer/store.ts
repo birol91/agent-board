@@ -54,6 +54,9 @@ interface UiStore {
   setSelectedAgent: (a: Agent | null) => void;
   statuses: Record<string, RunStatus>;
   setStatus: (agentName: string, status: RunStatus) => void;
+  // Active subagents whose name never resolved to an installed block
+  // (e.g. workflow-subagent, Explore, general-purpose). Keyed by agentId.
+  unresolvedActive: Record<string, true>;
   activity: ActivityEntry[];
   perAgentActivity: Record<string, AgentActivityEntry[]>;
   pendingByAgentId: Record<string, AgentActivityEntry[]>;
@@ -104,6 +107,7 @@ export const useUi = create<UiStore>((set) => ({
   statuses: {},
   setStatus: (name, status) =>
     set((s) => ({ statuses: { ...s.statuses, [name]: status } })),
+  unresolvedActive: {},
   activity: [],
   perAgentActivity: {},
   pendingByAgentId: {},
@@ -141,11 +145,20 @@ export const useUi = create<UiStore>((set) => ({
   dismissRestartHint: () => set({ restartHintAt: null }),
   ingestHookEvent: (e) =>
     set((s) => {
+      // Only process events from the project that's currently open. The hook
+      // server broadcasts every Claude Code session on the machine, so without
+      // this an agent running in another project would light up / be counted
+      // here.
+      const root = s.project?.rootPath;
+      if (root && e.cwd && !sameProject(e.cwd, root)) {
+        return {};
+      }
       const statuses = { ...s.statuses };
       const activity = [...s.activity];
       const perAgentActivity = { ...s.perAgentActivity };
       const pendingByAgentId = { ...s.pendingByAgentId };
       const agentIdToName = { ...s.agentIdToName };
+      const unresolvedActive = { ...s.unresolvedActive };
       const id = `${e.timestamp}-${Math.random().toString(36).slice(2, 8)}`;
 
       const pushToAgent = (
@@ -187,6 +200,7 @@ export const useUi = create<UiStore>((set) => ({
       if (e.type === "SubagentStart") {
         if (!e.agentName) {
           if (e.agentId) {
+            unresolvedActive[e.agentId] = true;
             pushPending(e.agentId, {
               id,
               timestamp: e.timestamp,
@@ -207,6 +221,8 @@ export const useUi = create<UiStore>((set) => ({
           statuses[e.agentName] = "running";
           if (e.agentId) {
             agentIdToName[e.agentId] = e.agentName;
+            // Name resolved after all — no longer an unnamed subagent.
+            delete unresolvedActive[e.agentId];
             flushPending(e.agentId, e.agentName);
           }
           activity.unshift({
@@ -219,6 +235,7 @@ export const useUi = create<UiStore>((set) => ({
           });
         }
       } else if (e.type === "SubagentStop") {
+        if (e.agentId) delete unresolvedActive[e.agentId];
         if (e.agentName) {
           statuses[e.agentName] = "idle";
           if (e.agentId) {
@@ -293,9 +310,21 @@ export const useUi = create<UiStore>((set) => ({
         perAgentActivity,
         pendingByAgentId,
         agentIdToName,
+        unresolvedActive,
       };
     }),
 }));
+
+/**
+ * True when an event's cwd belongs to the open project — either the project
+ * root itself or a subdirectory of it. Tolerates trailing slashes.
+ */
+function sameProject(cwd: string, root: string): boolean {
+  const norm = (p: string): string => p.replace(/\/+$/, "");
+  const c = norm(cwd);
+  const r = norm(root);
+  return c === r || c.startsWith(r + "/");
+}
 
 function summarizeToolInput(
   tool: string,
